@@ -5,6 +5,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import java.util.Map;
+
 
 @RestController
 @RequestMapping("/api/maps")
@@ -14,7 +16,7 @@ public class MapsController {
     private String apiKey;
 
     @GetMapping("/key")
-    public ResponseEntity<String> getApiKey() {
-        return ResponseEntity.ok(apiKey);
+    public Map<String, String> getApiKey() {
+        return Map.of("apiKey", apiKey);
     }
 }
