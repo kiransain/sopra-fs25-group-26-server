@@ -4,6 +4,8 @@ import ch.uzh.ifi.hase.soprafs24.constant.UserStatus;
 
 import javax.persistence.*;
 import java.io.Serializable;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Internal User Representation
@@ -23,10 +25,7 @@ public class User implements Serializable {
 
   @Id
   @GeneratedValue
-  private Long id;
-
-  @Column(nullable = false)
-  private String name;
+  private Long userId;
 
   @Column(nullable = false, unique = true)
   private String username;
@@ -34,23 +33,21 @@ public class User implements Serializable {
   @Column(nullable = false, unique = true)
   private String token;
 
-  @Column(nullable = false)
-  private UserStatus status;
+  // defines new table for stats with foreign_key user_id
+  @ElementCollection
+  @CollectionTable(name = "user_stats", joinColumns = @JoinColumn(name = "user_id"))
+  @MapKeyColumn(name = "stat_key")
+  @Column(name = "stat_value")
+  private Map<String, String> stats = new HashMap<>();
 
-  public Long getId() {
-    return id;
+
+
+  public Long getUserId() {
+    return userId;
   }
 
-  public void setId(Long id) {
-    this.id = id;
-  }
-
-  public String getName() {
-    return name;
-  }
-
-  public void setName(String name) {
-    this.name = name;
+  public void setUserId(Long userId) {
+    this.userId = userId;
   }
 
   public String getUsername() {
@@ -68,12 +65,12 @@ public class User implements Serializable {
   public void setToken(String token) {
     this.token = token;
   }
-
-  public UserStatus getStatus() {
-    return status;
-  }
-
-  public void setStatus(UserStatus status) {
-    this.status = status;
-  }
+//use this and then stats.put to update values in map
+    public Map<String, String> getStats() {
+        return stats;
+    }
+//only needed if whole map is replaced by other
+    public void setStats(Map<String, String> stats) {
+        this.stats = stats;
+    }
 }
