@@ -5,7 +5,6 @@ import ch.uzh.ifi.hase.soprafs24.constant.PlayerStatus;
 
 import javax.persistence.*;
 
-
 @Entity
 @Table(name = "PLAYER")
 public class Player {

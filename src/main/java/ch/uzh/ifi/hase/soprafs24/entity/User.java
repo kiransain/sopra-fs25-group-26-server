@@ -1,7 +1,5 @@
 package ch.uzh.ifi.hase.soprafs24.entity;
 
-import ch.uzh.ifi.hase.soprafs24.constant.UserStatus;
-
 import javax.persistence.*;
 import java.io.Serializable;
 import java.util.HashMap;
@@ -21,56 +19,68 @@ import java.util.Map;
 @Table(name = "USER")
 public class User implements Serializable {
 
-  private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 1L;
 
-  @Id
-  @GeneratedValue
-  private Long userId;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long userId;
 
-  @Column(nullable = false, unique = true)
-  private String username;
+    @Column(nullable = false, unique = true)
+    private String username;
 
-  @Column(nullable = false, unique = true)
-  private String token;
+    @Column(nullable = false)
+    private String password;
 
-  // defines new table for stats with foreign_key user_id
-  @ElementCollection
-  @CollectionTable(name = "user_stats", joinColumns = @JoinColumn(name = "user_id"))
-  @MapKeyColumn(name = "stat_key")
-  @Column(name = "stat_value")
-  private Map<String, String> stats = new HashMap<>();
+    @Column(nullable = false, unique = true)
+    private String token;
+
+    // defines new table for stats with foreign_key user_id
+    @ElementCollection
+    @CollectionTable(name = "user_stats", joinColumns = @JoinColumn(name = "user_id"))
+    @MapKeyColumn(name = "stat_key")
+    @Column(name = "stat_value")
+    private Map<String, String> stats = new HashMap<>();
 
 
+    public Long getUserId() {
+        return userId;
+    }
 
-  public Long getUserId() {
-    return userId;
-  }
+    public void setUserId(Long userId) {
+        this.userId = userId;
+    }
 
-  public void setUserId(Long userId) {
-    this.userId = userId;
-  }
+    public String getUsername() {
+        return username;
+    }
 
-  public String getUsername() {
-    return username;
-  }
+    public void setUsername(String username) {
+        this.username = username;
+    }
 
-  public void setUsername(String username) {
-    this.username = username;
-  }
+    public String getToken() {
+        return token;
+    }
 
-  public String getToken() {
-    return token;
-  }
+    public void setToken(String token) {
+        this.token = token;
+    }
 
-  public void setToken(String token) {
-    this.token = token;
-  }
-//use this and then stats.put to update values in map
+    //use this and then stats.put to update values in map
     public Map<String, String> getStats() {
         return stats;
     }
-//only needed if whole map is replaced by other
+
+    //only needed if whole map is replaced by other
     public void setStats(Map<String, String> stats) {
         this.stats = stats;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
     }
 }
