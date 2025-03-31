@@ -2,6 +2,7 @@ package ch.uzh.ifi.hase.soprafs24.service;
 
 import ch.uzh.ifi.hase.soprafs24.entity.User;
 import ch.uzh.ifi.hase.soprafs24.repository.UserRepository;
+import ch.uzh.ifi.hase.soprafs24.rest.dto.UserPostDTO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -55,6 +56,21 @@ public class UserService {
         log.debug("Created Information for User: {}", newUser);
         return newUser;
     }
+
+    @Transactional
+    public User loginUser(UserPostDTO userPostDTO) {
+        User user = userRepository.findByUsername(userPostDTO.getUsername());
+        if (user == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid username or password");
+        }
+        if (user.getPassword().equals(userPostDTO.getPassword())) {
+            return user;
+        }
+        else {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid username or password");
+        }
+    }
+
 
     /**
      * This is a helper method that will check the uniqueness criteria of the
