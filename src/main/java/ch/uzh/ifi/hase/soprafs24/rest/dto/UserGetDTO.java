@@ -1,43 +1,44 @@
 package ch.uzh.ifi.hase.soprafs24.rest.dto;
 
-import ch.uzh.ifi.hase.soprafs24.constant.UserStatus;
+import java.util.Map;
 
 public class UserGetDTO {
 
-  private Long id;
-  private String name;
-  private String username;
-  private UserStatus status;
+    private Long userId;
+    private String username;
+    private String token;
+    private Map<String, String> stats;
 
-  public Long getId() {
-    return id;
-  }
 
-  public void setId(Long id) {
-    this.id = id;
-  }
+    public Long getUserId() {
+        return userId;
+    }
 
-  public String getName() {
-    return name;
-  }
+    public void setUserId(Long userId) {
+        this.userId = userId;
+    }
 
-  public void setName(String name) {
-    this.name = name;
-  }
+    public String getUsername() {
+        return username;
+    }
 
-  public String getUsername() {
-    return username;
-  }
+    public void setUsername(String username) {
+        this.username = username;
+    }
 
-  public void setUsername(String username) {
-    this.username = username;
-  }
+    public Map<String, String> getStats() {
+        return stats;
+    }
 
-  public UserStatus getStatus() {
-    return status;
-  }
+    public void setStats(Map<String, String> stats) {
+        this.stats = stats;
+    }
 
-  public void setStatus(UserStatus status) {
-    this.status = status;
-  }
+    public String getToken() {
+        return token;
+    }
+
+    public void setToken(String token) {
+        this.token = token;
+    }
 }
