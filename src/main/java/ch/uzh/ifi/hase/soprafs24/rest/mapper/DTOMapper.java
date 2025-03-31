@@ -1,6 +1,10 @@
 package ch.uzh.ifi.hase.soprafs24.rest.mapper;
 
+import ch.uzh.ifi.hase.soprafs24.entity.Game;
+import ch.uzh.ifi.hase.soprafs24.entity.Player;
 import ch.uzh.ifi.hase.soprafs24.entity.User;
+import ch.uzh.ifi.hase.soprafs24.rest.dto.GameGetDTO;
+import ch.uzh.ifi.hase.soprafs24.rest.dto.PlayerGetDTO;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.UserGetDTO;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.UserPostDTO;
 import org.mapstruct.Mapper;
@@ -23,9 +27,11 @@ public interface DTOMapper {
 
     DTOMapper INSTANCE = Mappers.getMapper(DTOMapper.class);
 
-
     @Mapping(source = "username", target = "username")
     @Mapping(source = "password", target = "password")
+    @Mapping(target = "token", ignore = true)
+    @Mapping(target = "stats", ignore = true)
+    @Mapping(target = "userId", ignore = true)
     User convertUserPostDTOtoEntity(UserPostDTO userPostDTO);
 
     @Mapping(source = "userId", target = "userId")
@@ -33,4 +39,22 @@ public interface DTOMapper {
     @Mapping(source = "token", target = "token")
     @Mapping(source = "stats", target = "stats")
     UserGetDTO convertEntityToUserGetDTO(User user);
+
+    @Mapping(source = "gameId", target = "gameId")
+    @Mapping(source = "gamename", target = "gamename")
+    @Mapping(source = "status", target = "status")
+    @Mapping(source = "centerLatitude", target = "centerLatitude")
+    @Mapping(source = "centerLongitude", target = "centerLongitude")
+    @Mapping(source = "radius", target = "radius")
+    @Mapping(source = "creator.playerId", target = "creatorId")
+    @Mapping(source = "players", target = "playerIds")
+    GameGetDTO convertEntityToGameGetDTO(Game game);
+
+    @Mapping(source = "playerId", target = "playerId")
+    @Mapping(source = "user.userId", target = "userId")
+    @Mapping(source = "role", target = "role")
+    @Mapping(source = "status", target = "status")
+    @Mapping(source = "locationLat", target = "locationLat")
+    @Mapping(source = "locationLong", target = "locationLong")
+    PlayerGetDTO convertEntityToPlayerGetDTO(Player player);
 }

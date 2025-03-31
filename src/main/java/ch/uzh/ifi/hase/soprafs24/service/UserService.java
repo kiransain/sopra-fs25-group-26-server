@@ -71,6 +71,17 @@ public class UserService {
         }
     }
 
+    public User authenticateUser(String authorizationHeader) {
+        String token = authorizationHeader.replace("Bearer ", "");
+        User user = userRepository.findByToken(token);
+        if (user != null) {
+            return user;
+        }
+        else {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authorization failed");
+        }
+    }
+
 
     /**
      * This is a helper method that will check the uniqueness criteria of the
