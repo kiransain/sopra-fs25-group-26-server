@@ -37,7 +37,8 @@ public class Game implements Serializable {
     private GameStatus status;
     //tells JPA that one game can have multiple player where the game field in players is the link,
     //deleting a game will delete all players and if player removed from game, it will also be removed from DB
-    @OneToMany(mappedBy = "game", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "game", cascade = CascadeType.ALL
+            , orphanRemoval = true)
     private List<Player> players = new ArrayList<>();
     ;
 

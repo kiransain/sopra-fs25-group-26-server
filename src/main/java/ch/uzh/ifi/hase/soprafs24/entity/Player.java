@@ -32,10 +32,10 @@ public class Player {
     private PlayerRole role;
 
     @Column()
-    private double centerLatitude;
+    private double locationLatitude;
 
     @Column()
-    private double centerLongitude;
+    private double locationLongitude;
 
 
     public Long getPlayerId() {
@@ -78,19 +78,19 @@ public class Player {
         this.status = status;
     }
 
-    public double getCenterLatitude() {
-        return centerLatitude;
+    public double getLocationLatitude() {
+        return locationLatitude;
     }
 
-    public void setCenterLatitude(double centerLatitude) {
-        this.centerLatitude = centerLatitude;
+    public void setLocationLatitude(double locationLatitude) {
+        this.locationLatitude = locationLatitude;
     }
 
-    public double getCenterLongitude() {
-        return centerLongitude;
+    public double getLocationLongitude() {
+        return locationLongitude;
     }
 
-    public void setCenterLongitude(double centerLongitude) {
-        this.centerLongitude = centerLongitude;
+    public void setLocationLongitude(double locationLongitude) {
+        this.locationLongitude = locationLongitude;
     }
 }
