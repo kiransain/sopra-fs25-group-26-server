@@ -67,4 +67,11 @@ public class UserController {
         return DTOMapper.INSTANCE.convertEntityToUserGetDTO(loggedInUser);
     }
 
+    @GetMapping("/users/{userId}")
+    @ResponseStatus(HttpStatus.OK)
+    @ResponseBody
+    public UserGetDTO getUser(@RequestHeader("Authorization") String authorizationHeader, @PathVariable Long userId) {
+        User user = userService.getOwnProfile(authorizationHeader, userId);
+        return DTOMapper.INSTANCE.convertEntityToUserGetDTO(user);
+    }
 }

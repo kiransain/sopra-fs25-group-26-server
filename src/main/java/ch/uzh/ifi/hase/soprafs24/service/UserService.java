@@ -83,6 +83,15 @@ public class UserService {
         }
     }
 
+    public User getOwnProfile(String authorizationHeader, Long requestedUserId) {
+        User user = authenticateUser(authorizationHeader);
+        if (user.getUserId().equals(requestedUserId)) {
+            return user;
+        }
+        else {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Not own profile");
+        }
+    }
 
     /**
      * This is a helper method that will check the uniqueness criteria of the
