@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 /**
@@ -42,7 +43,7 @@ public class UserService {
         newUser.setToken(UUID.randomUUID().toString());
 
         Map<String, String> stats = new HashMap<>();
-        stats.put("creation_date", new Date().toString());
+        stats.put("creation_date", new SimpleDateFormat("dd.MM.yyyy").format(new Date()));
         stats.put("games_played", "0");
         stats.put("games_won", "0");
         newUser.setStats(stats);

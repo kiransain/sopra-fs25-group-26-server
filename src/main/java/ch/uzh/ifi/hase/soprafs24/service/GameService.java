@@ -69,6 +69,10 @@ public class GameService {
         gameRepository.save(game);
         gameRepository.flush();
         return game;
+    }
 
+    public List<Game> getJoinableGames() {
+        List<Game> games = gameRepository.findByStatus(GameStatus.IN_LOBBY);
+        return games;
     }
 }

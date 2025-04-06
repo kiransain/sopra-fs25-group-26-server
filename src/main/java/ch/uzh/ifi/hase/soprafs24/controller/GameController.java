@@ -12,6 +12,8 @@ import ch.uzh.ifi.hase.soprafs24.service.UserService;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 public class GameController {
 
@@ -34,5 +36,14 @@ public class GameController {
         Game game = gameService.createGame(gamePostDTO.getGamename(), player);
         return DTOMapper.INSTANCE.convertEntityToGameGetDTO(game);
 
+    }
+
+    @GetMapping("/games")
+    @ResponseStatus(HttpStatus.OK)
+    @ResponseBody
+    public List<GameGetDTO> getAllGames(@RequestHeader("Authorization") String authorizationHeader) {
+        User user = userService.authenticateUser(authorizationHeader);
+        List<Game> games = gameService.getJoinableGames();
+        return DTOMapper.INSTANCE.convertEntityToGameGetDTO(games);
     }
 }

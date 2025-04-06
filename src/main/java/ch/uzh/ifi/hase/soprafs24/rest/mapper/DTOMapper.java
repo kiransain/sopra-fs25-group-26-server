@@ -11,6 +11,8 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.factory.Mappers;
 
+import java.util.List;
+
 /**
  * DTOMapper
  * This class is responsible for generating classes that will automatically
@@ -47,8 +49,10 @@ public interface DTOMapper {
     @Mapping(source = "centerLongitude", target = "centerLongitude")
     @Mapping(source = "radius", target = "radius")
     @Mapping(source = "creator.playerId", target = "creatorId")
-    @Mapping(source = "players", target = "playerIds")
+    @Mapping(source = "players", target = "players")
     GameGetDTO convertEntityToGameGetDTO(Game game);
+
+    List<GameGetDTO> convertEntityToGameGetDTO(List<Game> games);
 
     @Mapping(source = "playerId", target = "playerId")
     @Mapping(source = "user.userId", target = "userId")

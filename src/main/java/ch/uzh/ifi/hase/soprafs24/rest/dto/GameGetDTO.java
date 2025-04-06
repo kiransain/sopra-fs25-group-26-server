@@ -13,7 +13,7 @@ public class GameGetDTO {
     private Double centerLongitude;
     private Double radius;
     private Long creatorId; // ID of the player (not User)
-    private List<PlayerGetDTO> playerIds;
+    private List<PlayerGetDTO> players;
 
     public Long getGameId() {
         return gameId;
@@ -71,11 +71,11 @@ public class GameGetDTO {
         this.creatorId = creatorId;
     }
 
-    public List<PlayerGetDTO> getPlayerIds() {
-        return playerIds;
+    public List<PlayerGetDTO> getPlayers() {
+        return players;
     }
 
-    public void setPlayerIds(List<PlayerGetDTO> playerIds) {
-        this.playerIds = playerIds;
+    public void setPlayers(List<PlayerGetDTO> players) {
+        this.players = players;
     }
 }
