@@ -7,6 +7,7 @@ import ch.uzh.ifi.hase.soprafs24.entity.User;
 import ch.uzh.ifi.hase.soprafs24.repository.GameRepository;
 import ch.uzh.ifi.hase.soprafs24.repository.PlayerRepository;
 import ch.uzh.ifi.hase.soprafs24.repository.UserRepository;
+import ch.uzh.ifi.hase.soprafs24.rest.dto.GamePutDTO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -74,5 +75,31 @@ public class GameService {
     public List<Game> getJoinableGames() {
         List<Game> games = gameRepository.findByStatus(GameStatus.IN_LOBBY);
         return games;
+    }
+
+    public Game updateGame(Long gameId, User user, GamePutDTO gamePutDTO) {
+        Game game = gameRepository.findByGameId(gameId);
+        if (game == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found");
+        }
+        if (game.getStatus() == GameStatus.IN_LOBBY) {
+            if (game.getPlayers().size() < 5) {
+                Player player = new Player();
+                player.setLocationLat(gamePutDTO.getLocationLat());
+                player.setLocationLong(gamePutDTO.getLocationLong());
+                player.setUser(user);
+                game.addPlayer(player);
+            }
+            else {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Game is full");
+            }
+            // for starting the game use same mapping just check if creator is the same as requesting user
+            // if (game.getCreator().equals(user)) {}
+        }
+
+
+        gameRepository.save(game);
+        gameRepository.flush();
+        return game;
     }
 }

@@ -6,6 +6,7 @@ import ch.uzh.ifi.hase.soprafs24.entity.User;
 import ch.uzh.ifi.hase.soprafs24.repository.UserRepository;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.GameGetDTO;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.GamePostDTO;
+import ch.uzh.ifi.hase.soprafs24.rest.dto.GamePutDTO;
 import ch.uzh.ifi.hase.soprafs24.rest.mapper.DTOMapper;
 import ch.uzh.ifi.hase.soprafs24.service.GameService;
 import ch.uzh.ifi.hase.soprafs24.service.UserService;
@@ -45,5 +46,14 @@ public class GameController {
         User user = userService.authenticateUser(authorizationHeader);
         List<Game> games = gameService.getJoinableGames();
         return DTOMapper.INSTANCE.convertEntityToGameGetDTO(games);
+    }
+
+    @PutMapping("/games/{gameId}")
+    @ResponseStatus(HttpStatus.OK)
+    @ResponseBody
+    public GameGetDTO updateGame(@RequestBody GamePutDTO gamePutDTO, @PathVariable Long gameId, @RequestHeader("Authorization") String authorizationHeader) {
+        User user = userService.authenticateUser(authorizationHeader);
+        Game game = gameService.updateGame(gameId, user, gamePutDTO);
+        return DTOMapper.INSTANCE.convertEntityToGameGetDTO(game);
     }
 }
