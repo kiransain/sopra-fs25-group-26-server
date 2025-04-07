@@ -1,6 +1,8 @@
 package ch.uzh.ifi.hase.soprafs24.service;
 
 import ch.uzh.ifi.hase.soprafs24.constant.GameStatus;
+import ch.uzh.ifi.hase.soprafs24.constant.PlayerRole;
+import ch.uzh.ifi.hase.soprafs24.constant.PlayerStatus;
 import ch.uzh.ifi.hase.soprafs24.entity.Game;
 import ch.uzh.ifi.hase.soprafs24.entity.Player;
 import ch.uzh.ifi.hase.soprafs24.entity.User;
@@ -17,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.Collections;
 import java.util.List;
 
 @Service
@@ -83,23 +86,77 @@ public class GameService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found");
         }
         if (game.getStatus() == GameStatus.IN_LOBBY) {
-            if (game.getPlayers().size() < 5) {
-                Player player = new Player();
-                player.setLocationLat(gamePutDTO.getLocationLat());
-                player.setLocationLong(gamePutDTO.getLocationLong());
-                player.setUser(user);
-                game.addPlayer(player);
+            boolean alreadyJoined = game.getPlayers().stream()
+                    .anyMatch(player -> player.getUser().getUserId().equals(user.getUserId()));
+            // if player not already in game, add him
+            if (!alreadyJoined) {
+                if (game.getPlayers().size() < 5) {
+                    Player player = new Player();
+                    player.setLocationLat(gamePutDTO.getLocationLat());
+                    player.setLocationLong(gamePutDTO.getLocationLong());
+                    player.setUser(user);
+                    game.addPlayer(player);
+                }
+                else {
+                    throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Game is full");
+                }
             }
+            // if player already in game, update location
             else {
-                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Game is full");
+                game.getPlayers().stream()
+                        .filter(player -> player.getUser().getUserId().equals(user.getUserId()))
+                        .forEach(player -> {
+                            player.setLocationLat(gamePutDTO.getLocationLat());
+                            player.setLocationLong(gamePutDTO.getLocationLong());
+                        });
             }
-            // for starting the game use same mapping just check if creator is the same as requesting user
-            // if (game.getCreator().equals(user)) {}
+            // if a player wants to start game, check if it is creator
+            if (gamePutDTO.isStartGame()) {
+                if (game.getCreator().getUser().getUserId().equals(user.getUserId()) && game.getPlayers().size() > 2) {
+                    game.setStatus(GameStatus.IN_GAME_PREPARATION);
+                    game = assignRoles(game);
+                }
+                else {
+                    throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only the creator can start the game");
+                }
+            }
         }
-
-
+        // implement logic for when game has started
+        //if (game.getStatus() == GameStatus.IN_GAME) {
+        //boolean alreadyJoined = game.getPlayers().stream()
+        //.anyMatch(player -> player.getUser().getUserId().equals(user.getUserId()));
+        //}
         gameRepository.save(game);
         gameRepository.flush();
         return game;
+    }
+
+    public Game assignRoles(Game game) {
+        List<Player> players = game.getPlayers();
+        Collections.shuffle(players);
+
+        for (int i = 0; i < players.size(); i++) {
+            Player player = players.get(i);
+            if (i == 0) {
+                player.setRole(PlayerRole.HUNTER);
+                player.setStatus(PlayerStatus.HUNTING);
+                game.setCenterLatitude(player.getLocationLat());
+                game.setCenterLongitude(player.getLocationLong());
+            }
+            else {
+                player.setRole(PlayerRole.HIDER);
+                player.setStatus(PlayerStatus.HIDING);
+            }
+        }
+        return game;
+    }
+
+    public List<Player> getPlayers(Long gameId) {
+        Game game = gameRepository.findByGameId(gameId);
+        if (game == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found");
+        }
+        return game.getPlayers();
+
     }
 }

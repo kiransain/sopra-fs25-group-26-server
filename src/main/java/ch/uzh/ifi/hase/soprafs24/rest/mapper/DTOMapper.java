@@ -61,4 +61,6 @@ public interface DTOMapper {
     @Mapping(source = "locationLat", target = "locationLat")
     @Mapping(source = "locationLong", target = "locationLong")
     PlayerGetDTO convertEntityToPlayerGetDTO(Player player);
+
+    List<PlayerGetDTO> convertEntityToPlayerGetDTO(List<Player> players);
 }

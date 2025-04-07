@@ -4,6 +4,7 @@ public class GamePutDTO {
 
     private Double locationLat;
     private Double locationLong;
+    private boolean startGame;
 
     public Double getLocationLat() {
         return locationLat;
@@ -19,5 +20,13 @@ public class GamePutDTO {
 
     public void setLocationLong(Double locationLong) {
         this.locationLong = locationLong;
+    }
+
+    public boolean isStartGame() {
+        return startGame;
+    }
+
+    public void setStartGame(boolean startGame) {
+        this.startGame = startGame;
     }
 }
