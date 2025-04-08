@@ -5,10 +5,7 @@ import ch.uzh.ifi.hase.soprafs24.entity.Player;
 import ch.uzh.ifi.hase.soprafs24.entity.User;
 import ch.uzh.ifi.hase.soprafs24.repository.GameRepository;
 import ch.uzh.ifi.hase.soprafs24.repository.UserRepository;
-import ch.uzh.ifi.hase.soprafs24.rest.dto.GameGetDTO;
-import ch.uzh.ifi.hase.soprafs24.rest.dto.GamePostDTO;
-import ch.uzh.ifi.hase.soprafs24.rest.dto.GamePutDTO;
-import ch.uzh.ifi.hase.soprafs24.rest.dto.PlayerGetDTO;
+import ch.uzh.ifi.hase.soprafs24.rest.dto.*;
 import ch.uzh.ifi.hase.soprafs24.rest.mapper.DTOMapper;
 import ch.uzh.ifi.hase.soprafs24.service.GameService;
 import ch.uzh.ifi.hase.soprafs24.service.UserService;
@@ -68,5 +65,15 @@ public class GameController {
         User user = userService.authenticateUser(authorizationHeader);
         List<Player> players = gameService.getPlayers(gameId);
         return DTOMapper.INSTANCE.convertEntityToPlayerGetDTO(players);
+    }
+
+    @PutMapping("/games/{gameId}/location")
+    @ResponseStatus(HttpStatus.NO_CONTENT) // Or OK if returning updated player/game
+    @ResponseBody // Keep ResponseBody if potentially returning data later
+    public void updatePlayerLocation(@PathVariable Long gameId,
+                                     @RequestBody PlayerLocationPutDTO locationDTO,
+                                     @RequestHeader("Authorization") String authorizationHeader) {
+        User user = userService.authenticateUser(authorizationHeader);
+        gameService.updatePlayerLocation(gameId, user, locationDTO);
     }
 }
