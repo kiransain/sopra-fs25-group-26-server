@@ -69,4 +69,52 @@ public class GameController {
         List<Player> players = gameService.getPlayers(gameId);
         return DTOMapper.INSTANCE.convertEntityToPlayerGetDTO(players);
     }
+
+    @PutMapping("/games/{gameId}/location")
+    @ResponseStatus(HttpStatus.NO_CONTENT) // Or OK if returning updated player/game
+    @ResponseBody // Keep ResponseBody if potentially returning data later
+    public void updatePlayerLocation(@PathVariable Long gameId,
+                                     @RequestBody PlayerLocationPutDTO locationDTO,
+                                     @RequestHeader("Authorization") String authorizationHeader) {
+        User user = userService.authenticateUser(authorizationHeader);
+        gameService.updatePlayerLocation(gameId, user, locationDTO);
+    }
+    @PostMapping("/games/{gameId}/join")
+    @ResponseStatus(HttpStatus.OK)
+    @ResponseBody
+    public GameGetDTO joinGame(@PathVariable Long gameId, 
+                            @RequestHeader("Authorization") String authorizationHeader) {
+        User user = userService.authenticateUser(authorizationHeader);
+        return DTOMapper.INSTANCE.convertEntityToGameGetDTO(
+            gameService.joinGame(gameId, user)
+        );
+    }
+
+    @PostMapping("/games/{gameId}/leave")
+    @ResponseStatus(HttpStatus.OK)
+    public void leaveGame(@PathVariable Long gameId,
+                        @RequestHeader("Authorization") String authorizationHeader) {
+        User user = userService.authenticateUser(authorizationHeader);
+        gameService.leaveGame(gameId, user);
+    }
+
+    @PostMapping("/games/{gameId}/start")
+    @ResponseStatus(HttpStatus.OK)
+    @ResponseBody
+    public GameGetDTO startGame(@PathVariable Long gameId,
+                            @RequestHeader("Authorization") String authorizationHeader) {
+        User user = userService.authenticateUser(authorizationHeader);
+        return DTOMapper.INSTANCE.convertEntityToGameGetDTO(
+            gameService.startGame(gameId, user)
+        );
+    }
+
+    @GetMapping("/games/{gameId}/canStart")
+    @ResponseStatus(HttpStatus.OK)
+    @ResponseBody
+    public boolean canStartGame(@PathVariable Long gameId,
+                            @RequestHeader("Authorization") String authorizationHeader) {
+        User user = userService.authenticateUser(authorizationHeader);
+        return gameService.canStartGame(gameId, user);
+    }
 }
