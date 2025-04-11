@@ -8,7 +8,6 @@ import ch.uzh.ifi.hase.soprafs24.repository.UserRepository;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.GameGetDTO;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.GamePostDTO;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.GamePutDTO;
-import ch.uzh.ifi.hase.soprafs24.rest.dto.PlayerGetDTO;
 import ch.uzh.ifi.hase.soprafs24.rest.mapper.DTOMapper;
 import ch.uzh.ifi.hase.soprafs24.service.GameService;
 import ch.uzh.ifi.hase.soprafs24.service.UserService;
