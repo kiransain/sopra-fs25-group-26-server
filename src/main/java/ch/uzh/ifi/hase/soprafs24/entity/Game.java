@@ -4,6 +4,7 @@ import ch.uzh.ifi.hase.soprafs24.constant.GameStatus;
 
 import javax.persistence.*;
 import java.io.Serializable;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -32,6 +33,9 @@ public class Game implements Serializable {
 
     @Column()
     private GameStatus status;
+
+    @Column()
+    private LocalDateTime timer;
 
     @OneToOne
     @JoinColumn(name = "creator_id")
@@ -103,10 +107,21 @@ public class Game implements Serializable {
         return players;
     }
 
+    public void setPlayers(List<Player> players) {
+        this.players = players;
+    }
+
     // adds new Player to Game List and also sets Game attribute of Player
     public void addPlayer(Player player) {
         this.players.add(player);
         player.setGame(this);
+    }
 
+    public LocalDateTime getTimer() {
+        return timer;
+    }
+
+    public void setTimer(LocalDateTime timer) {
+        this.timer = timer;
     }
 }

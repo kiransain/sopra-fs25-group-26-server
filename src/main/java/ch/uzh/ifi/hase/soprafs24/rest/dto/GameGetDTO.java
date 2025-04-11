@@ -2,6 +2,7 @@ package ch.uzh.ifi.hase.soprafs24.rest.dto;
 
 import ch.uzh.ifi.hase.soprafs24.constant.GameStatus;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 public class GameGetDTO {
@@ -11,6 +12,7 @@ public class GameGetDTO {
     private GameStatus status;
     private Double centerLatitude;
     private Double centerLongitude;
+    private LocalDateTime timer;
     private Double radius;
     private Long creatorId; // ID of the player (not User)
     private List<PlayerGetDTO> players;
@@ -77,5 +79,13 @@ public class GameGetDTO {
 
     public void setPlayers(List<PlayerGetDTO> players) {
         this.players = players;
+    }
+
+    public LocalDateTime getTimer() {
+        return timer;
+    }
+
+    public void setTimer(LocalDateTime timer) {
+        this.timer = timer;
     }
 }

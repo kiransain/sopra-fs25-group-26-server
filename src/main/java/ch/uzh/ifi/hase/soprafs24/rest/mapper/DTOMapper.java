@@ -1,10 +1,8 @@
 package ch.uzh.ifi.hase.soprafs24.rest.mapper;
 
 import ch.uzh.ifi.hase.soprafs24.entity.Game;
-import ch.uzh.ifi.hase.soprafs24.entity.Player;
 import ch.uzh.ifi.hase.soprafs24.entity.User;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.GameGetDTO;
-import ch.uzh.ifi.hase.soprafs24.rest.dto.PlayerGetDTO;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.UserGetDTO;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.UserPostDTO;
 import org.mapstruct.Mapper;
@@ -48,19 +46,12 @@ public interface DTOMapper {
     @Mapping(source = "centerLatitude", target = "centerLatitude")
     @Mapping(source = "centerLongitude", target = "centerLongitude")
     @Mapping(source = "radius", target = "radius")
+    @Mapping(source = "timer", target = "timer")
     @Mapping(source = "creator.playerId", target = "creatorId")
     @Mapping(source = "players", target = "players")
     GameGetDTO convertEntityToGameGetDTO(Game game);
 
     List<GameGetDTO> convertEntityToGameGetDTO(List<Game> games);
 
-    @Mapping(source = "playerId", target = "playerId")
-    @Mapping(source = "user.userId", target = "userId")
-    @Mapping(source = "role", target = "role")
-    @Mapping(source = "status", target = "status")
-    @Mapping(source = "locationLat", target = "locationLat")
-    @Mapping(source = "locationLong", target = "locationLong")
-    PlayerGetDTO convertEntityToPlayerGetDTO(Player player);
 
-    List<PlayerGetDTO> convertEntityToPlayerGetDTO(List<Player> players);
 }

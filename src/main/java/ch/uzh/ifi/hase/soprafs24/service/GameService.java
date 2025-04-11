@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 
@@ -31,6 +32,9 @@ public class GameService {
     private final UserRepository userRepository;
     private final UserService userService;
     private final PlayerRepository playerRepository;
+
+    @Autowired
+    private GameTimerService gameTimerService;
 
     @Autowired
     public GameService(@Qualifier("gameRepository") GameRepository gameRepository,
@@ -81,60 +85,88 @@ public class GameService {
     }
 
     public Game updateGame(Long gameId, User user, GamePutDTO gamePutDTO) {
+
         Game game = gameRepository.findByGameId(gameId);
         if (game == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found");
         }
+
         if (game.getStatus() == GameStatus.IN_LOBBY) {
-            boolean alreadyJoined = game.getPlayers().stream()
-                    .anyMatch(player -> player.getUser().getUserId().equals(user.getUserId()));
-            // if player not already in game, add him
-            if (!alreadyJoined) {
-                if (game.getPlayers().size() < 5) {
-                    Player player = new Player();
-                    player.setLocationLat(gamePutDTO.getLocationLat());
-                    player.setLocationLong(gamePutDTO.getLocationLong());
-                    player.setUser(user);
-                    game.addPlayer(player);
-                }
-                else {
-                    throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Game is full");
-                }
-            }
-            // if player already in game, update location
-            else {
-                game.getPlayers().stream()
-                        .filter(player -> player.getUser().getUserId().equals(user.getUserId()))
-                        .forEach(player -> {
-                            player.setLocationLat(gamePutDTO.getLocationLat());
-                            player.setLocationLong(gamePutDTO.getLocationLong());
-                        });
-            }
-            // if a player wants to start game, check if it is creator
-            if (gamePutDTO.isStartGame()) {
-                if (game.getCreator().getUser().getUserId().equals(user.getUserId()) && game.getPlayers().size() > 2) {
-                    game.setStatus(GameStatus.IN_GAME_PREPARATION);
-                    game = assignRoles(game);
-                }
-                else {
-                    throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only the creator can start the game");
-                }
-            }
+            game = handleInLobby(game, user, gamePutDTO);
         }
-        // implement logic for when game has started
-        //if (game.getStatus() == GameStatus.IN_GAME) {
-        //boolean alreadyJoined = game.getPlayers().stream()
-        //.anyMatch(player -> player.getUser().getUserId().equals(user.getUserId()));
-        //}
+
+        if (game.getStatus() == GameStatus.IN_GAME_PREPARATION) {
+            game = handleInGamePreparation(game, user, gamePutDTO);
+        }
+
+        return game;
+    }
+
+    public Game handleInGamePreparation(Game game, User user, GamePutDTO gamePutDTO) {
+        boolean alreadyJoined = game.getPlayers().stream()
+                .anyMatch(player -> player.getUser().getUserId().equals(user.getUserId()));
+        // update location if user is already in game
+        if (alreadyJoined) {
+            game.getPlayers().stream()
+                    .filter(player -> player.getUser().getUserId().equals(user.getUserId()))
+                    .forEach(player -> {
+                        player.setLocationLat(gamePutDTO.getLocationLat());
+                        player.setLocationLong(gamePutDTO.getLocationLong());
+                    });
+        }
+        else {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Game has already started");
+        }
+
         gameRepository.save(game);
         gameRepository.flush();
         return game;
     }
 
-    public Game assignRoles(Game game) {
+    public Game handleInLobby(Game game, User user, GamePutDTO gamePutDTO) {
+        boolean alreadyJoined = game.getPlayers().stream()
+                .anyMatch(player -> player.getUser().getUserId().equals(user.getUserId()));
+        // if player not already in game, add him
+        if (!alreadyJoined) {
+            if (game.getPlayers().size() < 5) {
+                Player player = new Player();
+                player.setLocationLat(gamePutDTO.getLocationLat());
+                player.setLocationLong(gamePutDTO.getLocationLong());
+                player.setUser(user);
+                game.addPlayer(player);
+            }
+            else {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Game is full");
+            }
+        }
+        // if player already in game, update location
+        else {
+            game.getPlayers().stream()
+                    .filter(player -> player.getUser().getUserId().equals(user.getUserId()))
+                    .forEach(player -> {
+                        player.setLocationLat(gamePutDTO.getLocationLat());
+                        player.setLocationLong(gamePutDTO.getLocationLong());
+                    });
+        }
+        // if a player wants to start game, check if it is creator
+        if (gamePutDTO.isStartGame()) {
+            if (game.getCreator().getUser().getUserId().equals(user.getUserId()) && game.getPlayers().size() > 2) {
+                game.setStatus(GameStatus.IN_GAME_PREPARATION);
+                game = start(game);
+            }
+            else {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only the creator can start the game");
+            }
+        }
+        gameRepository.save(game);
+        gameRepository.flush();
+        return game;
+    }
+
+    public Game start(Game game) {
         List<Player> players = game.getPlayers();
         Collections.shuffle(players);
-
+        // assign roles
         for (int i = 0; i < players.size(); i++) {
             Player player = players.get(i);
             if (i == 0) {
@@ -148,6 +180,16 @@ public class GameService {
                 player.setStatus(PlayerStatus.HIDING);
             }
         }
+        // set radius based on player count
+        double radius = 25 * players.size();
+        game.setRadius(radius);
+        // set a timestamp for timer so that client can use that to display timer
+        game.setTimer(LocalDateTime.now());
+        //start scheduler to change status after timer runs out
+        gameTimerService.startPreparationTimer(game.getGameId());
+
+        gameRepository.save(game);
+        gameRepository.flush();
         return game;
     }
 
