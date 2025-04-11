@@ -33,10 +33,12 @@ public class UserController {
     @GetMapping("/users")
     @ResponseStatus(HttpStatus.OK)
     @ResponseBody
-    // will this be used or just for debugging? can this be taken out?
     public List<UserGetDTO> getAllUsers() {
+        // fetch all users in the internal representation
         List<User> users = userService.getUsers();
         List<UserGetDTO> userGetDTOs = new ArrayList<>();
+
+        // convert each user to the API representation
         for (User user : users) {
             userGetDTOs.add(DTOMapper.INSTANCE.convertEntityToUserGetDTO(user));
         }
@@ -47,8 +49,12 @@ public class UserController {
     @ResponseStatus(HttpStatus.CREATED)
     @ResponseBody
     public UserGetDTO createUser(@RequestBody UserPostDTO userPostDTO) {
+        // convert API user to internal representation
         User userInput = DTOMapper.INSTANCE.convertUserPostDTOtoEntity(userPostDTO);
+
+        // create user
         User createdUser = userService.createUser(userInput);
+        // convert internal representation of user back to API
         return DTOMapper.INSTANCE.convertEntityToUserGetDTO(createdUser);
     }
 
@@ -56,6 +62,7 @@ public class UserController {
     @ResponseStatus(HttpStatus.ACCEPTED)
     @ResponseBody
     public UserGetDTO login(@RequestBody UserPostDTO userPostDTO) {
+
         User loggedInUser = userService.loginUser(userPostDTO);
         return DTOMapper.INSTANCE.convertEntityToUserGetDTO(loggedInUser);
     }
