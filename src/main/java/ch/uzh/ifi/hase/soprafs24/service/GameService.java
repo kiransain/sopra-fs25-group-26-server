@@ -99,7 +99,58 @@ public class GameService {
             game = handleInGamePreparation(game, user, gamePutDTO);
         }
 
+        if (game.getStatus() == GameStatus.IN_GAME) {
+            game = handleInGame(game, user, gamePutDTO);
+        }
+
         return game;
+    }
+
+    public Game handleInGame(Game game, User user, GamePutDTO gamePutDTO) {
+        boolean alreadyJoined = game.getPlayers().stream()
+                .anyMatch(player -> player.getUser().getUserId().equals(user.getUserId()));
+        // update location if user is already in game
+        if (alreadyJoined) {
+            game.getPlayers().stream()
+                    .filter(player -> player.getUser().getUserId().equals(user.getUserId()))
+                    .forEach(player -> {
+                        player.setLocationLat(gamePutDTO.getLocationLat());
+                        player.setLocationLong(gamePutDTO.getLocationLong());
+                        // calculate distance of player to center of game area
+                        double distance = calculateDistance(
+                                player.getLocationLat(), player.getLocationLong(),
+                                game.getCenterLatitude(), game.getCenterLongitude());
+                        player.setOutOfArea(distance > game.getRadius());
+                    });
+
+        }
+        else {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Game has already started");
+        }
+
+        gameRepository.save(game);
+        gameRepository.flush();
+        return game;
+    }
+
+    public double calculateDistance(double lat1, double long1, double lat2, double long2) {
+        final int EARTH_RADIUS = 6371; // Earth radius in kilometers
+
+        // Convert degrees to radians
+        double dLat = Math.toRadians(lat2 - lat1);
+        double dLon = Math.toRadians(long2 - long1);
+
+        // Haversine formula:
+        // a = sin²(Δlat/2) + cos(lat1) * cos(lat2) * sin²(Δlon/2)
+        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2)) *
+                        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+
+        // c = 2 * atan2(√a, √(1–a))
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+        // Distance = Earth's radius * c * 1000 - 5 (tolerance because of GPS)
+        return (EARTH_RADIUS * c * 1000) - 5;
     }
 
     public Game handleInGamePreparation(Game game, User user, GamePutDTO gamePutDTO) {

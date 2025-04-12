@@ -27,9 +27,22 @@ public class GameTimerService {
                 game.setStatus(GameStatus.IN_GAME);
                 game.setTimer(LocalDateTime.now());
                 gameRepository.save(game);
+                startFinishTimer(gameId);
                 gameRepository.flush();
                 System.out.println("Game " + gameId + " has started.");
             }
-        }, 2, TimeUnit.MINUTES);
+        }, 1, TimeUnit.MINUTES);
+    }
+
+    public void startFinishTimer(Long gameId) {
+        scheduler.schedule(() -> {
+            Game game = gameRepository.findById(gameId).orElse(null);
+            if (game != null && game.getStatus() == GameStatus.IN_GAME) {
+                game.setStatus(GameStatus.FINISHED);
+                gameRepository.save(game);
+                gameRepository.flush();
+                System.out.println("Game " + gameId + " has finished.");
+            }
+        }, 1, TimeUnit.MINUTES);
     }
 }

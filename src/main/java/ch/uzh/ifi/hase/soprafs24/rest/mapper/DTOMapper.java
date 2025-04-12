@@ -59,6 +59,8 @@ public interface DTOMapper {
     @Mapping(source = "user.userId", target = "userId")
     @Mapping(source = "role", target = "role")
     @Mapping(source = "status", target = "status")
+    @Mapping(source = "outOfArea", target = "outOfArea")
+    @Mapping(source = "foundTime", target = "foundTime")
     @Mapping(source = "locationLat", target = "locationLat")
     @Mapping(source = "locationLong", target = "locationLong")
     PlayerGetDTO convertEntityToPlayerGetDTO(Player player);

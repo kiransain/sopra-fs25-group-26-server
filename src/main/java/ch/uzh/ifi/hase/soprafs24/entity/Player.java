@@ -4,6 +4,7 @@ import ch.uzh.ifi.hase.soprafs24.constant.PlayerRole;
 import ch.uzh.ifi.hase.soprafs24.constant.PlayerStatus;
 
 import javax.persistence.*;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "PLAYER")
@@ -36,6 +37,12 @@ public class Player {
 
     @Column()
     private double locationLong;
+
+    @Column
+    private boolean outOfArea;
+
+    @Column
+    private LocalDateTime foundTime;
 
 
     public Long getPlayerId() {
@@ -92,5 +99,21 @@ public class Player {
 
     public void setLocationLong(double locationLong) {
         this.locationLong = locationLong;
+    }
+
+    public boolean isOutOfArea() {
+        return outOfArea;
+    }
+
+    public void setOutOfArea(boolean outOfArea) {
+        this.outOfArea = outOfArea;
+    }
+
+    public LocalDateTime getFoundTime() {
+        return foundTime;
+    }
+
+    public void setFoundTime(LocalDateTime foundTime) {
+        this.foundTime = foundTime;
     }
 }
