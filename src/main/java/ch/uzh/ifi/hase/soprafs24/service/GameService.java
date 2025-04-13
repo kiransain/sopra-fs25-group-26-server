@@ -103,8 +103,18 @@ public class GameService {
             game = handleInGame(game, user, gamePutDTO);
         }
 
+        //if (game.getStatus() == GameStatus.FINISHED) {
+        //game = handleFinished(game, user, gamePutDTO);
+        //}
+
         return game;
     }
+
+    //public Game handleFinished(Game game, User user, GamePutDTO gamePutDTO) {
+    // List<Player> players = game.getPlayers();
+    //set ranking
+
+    //}
 
     public Game handleInGame(Game game, User user, GamePutDTO gamePutDTO) {
         boolean alreadyJoined = game.getPlayers().stream()
@@ -252,4 +262,53 @@ public class GameService {
         return game.getPlayers();
 
     }
+
+    public Game updatePlayer(Long gameId, long playerId, User user) {
+        //find game
+        Game game = gameRepository.findByGameId(gameId);
+        if (game == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found");
+        }
+        //find player
+        Player player = playerRepository.findPlayerByPlayerId(playerId);
+        if (player == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Player not found");
+        }
+
+        //check if player is in that game and user it that player and Game is in Game
+        if (game.getPlayers().contains(player) && player.getUser().getUserId().equals(user.getUserId()) && game.getStatus() == GameStatus.IN_GAME) {
+            //check if player is hider and not found yet
+            if (player.getRole() == PlayerRole.HIDER && player.getStatus() == PlayerStatus.HIDING) {
+                player.setStatus(PlayerStatus.FOUND);
+                player.setFoundTime(LocalDateTime.now());
+                game = checkEndCondition(game);
+            }
+            else {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Player is not a hider or already found");
+            }
+        }
+        else {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Player is not in that game or user is not that player");
+        }
+
+        gameRepository.save(game);
+        gameRepository.flush();
+        return game;
+    }
+
+    public Game checkEndCondition(Game game) {
+        // check if all hiders are found
+        boolean allHidersFound = game.getPlayers().stream()
+                .filter(player -> player.getRole() == PlayerRole.HIDER)
+                .allMatch(player -> player.getStatus() == PlayerStatus.FOUND);
+
+        if (allHidersFound) {
+            game.setStatus(GameStatus.FINISHED);
+            gameTimerService.stopFinishTimer(game.getGameId());
+            log.info("Game {} finished", game.getGameId());
+        }
+        return game;
+    }
+
+
 }

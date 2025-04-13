@@ -7,15 +7,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
-// Scheduler that changes game status to in game after 10minutes in game preparation
+// Scheduler that changes game status to in game in game preparation and also afterwards to finished
 @Component
 public class GameTimerService {
 
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+    //hashmap that associates gameId with the scheduled future
+    private final ConcurrentHashMap<Long, ScheduledFuture<?>> finishTimers = new ConcurrentHashMap<>();
 
     @Autowired
     private GameRepository gameRepository;
@@ -35,7 +35,7 @@ public class GameTimerService {
     }
 
     public void startFinishTimer(Long gameId) {
-        scheduler.schedule(() -> {
+        ScheduledFuture<?> future = scheduler.schedule(() -> {
             Game game = gameRepository.findById(gameId).orElse(null);
             if (game != null && game.getStatus() == GameStatus.IN_GAME) {
                 game.setStatus(GameStatus.FINISHED);
@@ -44,5 +44,16 @@ public class GameTimerService {
                 System.out.println("Game " + gameId + " has finished.");
             }
         }, 1, TimeUnit.MINUTES);
+        finishTimers.put(gameId, future);
+    }
+
+    // method called when game is finished because all hiders caught to stop timer
+    public void stopFinishTimer(Long gameId) {
+        ScheduledFuture<?> future = finishTimers.get(gameId);
+        if (future != null) {
+            future.cancel(false);
+            finishTimers.remove(gameId);
+            System.out.println("Finish timer for game " + gameId + " has been stopped.");
+        }
     }
 }

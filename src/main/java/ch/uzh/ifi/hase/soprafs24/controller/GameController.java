@@ -59,4 +59,14 @@ public class GameController {
         Game game = gameService.updateGame(gameId, user, gamePutDTO);
         return DTOMapper.INSTANCE.convertEntityToGameGetDTO(game);
     }
+
+    @PutMapping("games/{gameId}/players/{playerId}")
+    @ResponseStatus(HttpStatus.OK)
+    @ResponseBody
+    public GameGetDTO updatePlayer(@PathVariable Long gameId, @PathVariable Long playerId, @RequestHeader("Authorization") String authorizationHeader) {
+        User user = userService.authenticateUser(authorizationHeader);
+        Game game = gameService.updatePlayer(gameId, playerId, user);
+        return DTOMapper.INSTANCE.convertEntityToGameGetDTO(game);
+    }
 }
+

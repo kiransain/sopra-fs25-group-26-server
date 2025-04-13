@@ -16,5 +16,7 @@ public interface PlayerRepository extends JpaRepository<Player, Long> {
 
     Optional<Player> findByUser(User user); // one player per user
 
-    boolean existsByUser(User user); // check if user is already a player
+    boolean existsByUser(User user);// check if user is already a player
+
+    Player findPlayerByPlayerId(long playerId);
 }
