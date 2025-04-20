@@ -44,6 +44,9 @@ public class Player {
     @Column
     private LocalDateTime foundTime;
 
+    @Column
+    private double rank;
+
 
     public Long getPlayerId() {
         return playerId;
@@ -115,5 +118,13 @@ public class Player {
 
     public void setFoundTime(LocalDateTime foundTime) {
         this.foundTime = foundTime;
+    }
+
+    public double getRank() {
+        return rank;
+    }
+
+    public void setRank(double rank) {
+        this.rank = rank;
     }
 }

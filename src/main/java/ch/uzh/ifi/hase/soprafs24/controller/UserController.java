@@ -74,4 +74,12 @@ public class UserController {
         User user = userService.getOwnProfile(authorizationHeader, userId);
         return DTOMapper.INSTANCE.convertEntityToUserGetDTO(user);
     }
+
+    @GetMapping("/me")
+    @ResponseStatus(HttpStatus.OK)
+    @ResponseBody
+    public UserGetDTO getCurrentUser(@RequestHeader("Authorization") String authorizationHeader) {
+        User user = userService.authenticateUser(authorizationHeader);
+        return DTOMapper.INSTANCE.convertEntityToUserGetDTO(user);
+    }
 }

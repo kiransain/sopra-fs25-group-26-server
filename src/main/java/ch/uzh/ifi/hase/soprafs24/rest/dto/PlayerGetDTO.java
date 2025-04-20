@@ -15,6 +15,7 @@ public class PlayerGetDTO {
     private LocalDateTime foundTime;
     private Double locationLat;
     private Double locationLong;
+    private Double rank;
 
     public Long getPlayerId() {
         return playerId;
@@ -78,5 +79,13 @@ public class PlayerGetDTO {
 
     public void setFoundTime(LocalDateTime foundTime) {
         this.foundTime = foundTime;
+    }
+
+    public Double getRank() {
+        return rank;
+    }
+
+    public void setRank(Double rank) {
+        this.rank = rank;
     }
 }

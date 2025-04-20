@@ -19,6 +19,8 @@ public class GameTimerService {
 
     @Autowired
     private GameRepository gameRepository;
+    @Autowired
+    private GameService gameService;
 
     public void startPreparationTimer(Long gameId) {
         scheduler.schedule(() -> {
@@ -27,20 +29,20 @@ public class GameTimerService {
                 game.setStatus(GameStatus.IN_GAME);
                 game.setTimer(LocalDateTime.now());
                 gameRepository.save(game);
-                startFinishTimer(gameId);
                 gameRepository.flush();
                 System.out.println("Game " + gameId + " has started.");
+                startFinishTimer(gameId);
+                System.out.println("Finish timer has started");
             }
         }, 1, TimeUnit.MINUTES);
     }
 
     public void startFinishTimer(Long gameId) {
         ScheduledFuture<?> future = scheduler.schedule(() -> {
+            System.out.println("Game " + gameId + " is about to finish.");
             Game game = gameRepository.findById(gameId).orElse(null);
             if (game != null && game.getStatus() == GameStatus.IN_GAME) {
-                game.setStatus(GameStatus.FINISHED);
-                gameRepository.save(game);
-                gameRepository.flush();
+                gameService.finishGame(gameId);
                 System.out.println("Game " + gameId + " has finished.");
             }
         }, 1, TimeUnit.MINUTES);

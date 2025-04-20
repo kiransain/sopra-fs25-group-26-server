@@ -21,7 +21,9 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -103,18 +105,8 @@ public class GameService {
             game = handleInGame(game, user, gamePutDTO);
         }
 
-        //if (game.getStatus() == GameStatus.FINISHED) {
-        //game = handleFinished(game, user, gamePutDTO);
-        //}
-
         return game;
     }
-
-    //public Game handleFinished(Game game, User user, GamePutDTO gamePutDTO) {
-    // List<Player> players = game.getPlayers();
-    //set ranking
-
-    //}
 
     public Game handleInGame(Game game, User user, GamePutDTO gamePutDTO) {
         boolean alreadyJoined = game.getPlayers().stream()
@@ -290,7 +282,6 @@ public class GameService {
         else {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Player is not in that game or user is not that player");
         }
-
         gameRepository.save(game);
         gameRepository.flush();
         return game;
@@ -306,9 +297,93 @@ public class GameService {
             game.setStatus(GameStatus.FINISHED);
             gameTimerService.stopFinishTimer(game.getGameId());
             log.info("Game {} finished", game.getGameId());
+            computeRankings(game);
+            gameRepository.save(game);
+            gameRepository.flush();
+
         }
         return game;
     }
 
 
+    public void computeRankings(Game game) {
+        // Get the list of hiders sorted with null foundTime first
+        System.out.println("Computing rankings for game: " + game.getGameId());
+        List<Player> hiders = game.getPlayers().stream()
+                .filter(player -> player.getRole() == PlayerRole.HIDER)
+                .sorted(Comparator.comparing(Player::getFoundTime, Comparator.nullsFirst(Comparator.naturalOrder())))
+                .collect(Collectors.toList());
+        System.out.println("After Hiders List");
+
+        // For hiders who have not been caught (null foundTime), assign rank 1.
+        // For hiders who have a foundTime (were caught), start ranking from 2.
+        int nextRank = 2;
+        for (Player hider : hiders) {
+            if (hider.getFoundTime() == null) {
+                hider.setRank(1);
+            }
+            else {
+                hider.setRank(nextRank);
+                nextRank++;
+            }
+        }
+
+        // Assign rank to the hunter
+        // If all hiders are caught (none have a null foundTime), then the hunter wins and should be rank 1.
+        // Otherwise, if at least one hider is not caught, the hunter gets lowest rank
+        Player hunter = game.getPlayers().stream()
+                .filter(player -> player.getRole() == PlayerRole.HUNTER)
+                .findFirst().orElse(null);
+
+        // Check if all hiders have been caught (none with null foundTime)
+        boolean allHidersCaught = hiders.stream().noneMatch(hider -> hider.getFoundTime() == null);
+
+        if (hunter != null) {
+            if (allHidersCaught) {
+                // If all hiders are caught, assign hunter rank 1
+                hunter.setRank(1);
+            }
+            else {
+                // If any hider is not caught, let the hunter get the worst rank among the participants.
+                double lastRankHiders = hiders.get(hiders.size() - 1).getRank();
+                hunter.setRank(lastRankHiders + 1);
+            }
+        }
+        System.out.println("Setting stats for game: " + game.getGameId());
+        updateStats(game);
+        gameRepository.save(game);
+        gameRepository.flush();
+    }
+
+    public void updateStats(Game game) {
+        System.out.println("Updating stats for game: " + game.getGameId());
+        for (Player player : game.getPlayers()) {
+            User user = player.getUser();
+            if (player.getRank() == 1) {
+                user.getStats().put("wins", Integer.toString(Integer.parseInt(user.getStats().get("wins")) + 1));
+                user.getStats().put("gamesPlayed", Integer.toString(Integer.parseInt(user.getStats().get("gamesPlayed")) + 1));
+            }
+            else {
+                user.getStats().put("gamesPlayed", Integer.toString(Integer.parseInt(user.getStats().get("gamesPlayed")) + 1));
+            }
+        }
+        userRepository.saveAll(game.getPlayers().stream()
+                .map(Player::getUser)
+                .collect(Collectors.toList()));
+        userRepository.flush();
+
+    }
+
+    public void finishGame(Long gameId) {
+        Game game = gameRepository.findByGameId(gameId);
+        if (game == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found");
+        }
+        game.setStatus(GameStatus.FINISHED);
+        gameTimerService.stopFinishTimer(game.getGameId());
+        log.info("Game {} finished", game.getGameId());
+        computeRankings(game);
+        gameRepository.save(game);
+        gameRepository.flush();
+    }
 }
