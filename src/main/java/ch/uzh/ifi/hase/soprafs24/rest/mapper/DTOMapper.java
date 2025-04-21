@@ -57,6 +57,7 @@ public interface DTOMapper {
 
     @Mapping(source = "playerId", target = "playerId")
     @Mapping(source = "user.userId", target = "userId")
+    @Mapping(source = "displayName", target = "displayName")
     @Mapping(source = "role", target = "role")
     @Mapping(source = "status", target = "status")
     @Mapping(source = "outOfArea", target = "outOfArea")

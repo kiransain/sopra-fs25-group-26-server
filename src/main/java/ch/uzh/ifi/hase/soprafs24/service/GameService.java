@@ -52,25 +52,32 @@ public class GameService {
         return gameRepository.findAll();
     }
 
-    public Player createPlayer(double locationLatitude, double locationLongitude, User creator) {
+    public Player createPlayer(double locationLatitude, double locationLongitude, User user) {
         // Check if user is already a player
-        if (playerRepository.findByUser(creator).isPresent()) {
+        if (playerRepository.findByUser(user).isPresent()) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "User is already a Player");
         }
 
         Player player = new Player();
+        player.setDisplayName(user.getUsername());
         player.setLocationLat(locationLatitude);
         player.setLocationLong(locationLongitude);
-        player.setUser(creator);
+        player.setUser(user);
         playerRepository.save(player);
         playerRepository.flush();
         return player;
     }
 
     public Game createGame(String gamename, Player player) {
-        if (gameRepository.findByGamename(gamename) != null) {
+        List<Game> activeGames = gameRepository.findByStatusNot(GameStatus.FINISHED);
+
+        boolean nameTaken = activeGames.stream()
+                .anyMatch(game -> game.getGamename().equals(gamename));
+
+        if (nameTaken) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Gamename already exists");
         }
+
         Game game = new Game();
         game.setGamename(gamename);
         game.addPlayer(player);
@@ -182,10 +189,7 @@ public class GameService {
         // if player not already in game, add him
         if (!alreadyJoined) {
             if (game.getPlayers().size() < 5) {
-                Player player = new Player();
-                player.setLocationLat(gamePutDTO.getLocationLat());
-                player.setLocationLong(gamePutDTO.getLocationLong());
-                player.setUser(user);
+                Player player = createPlayer(gamePutDTO.getLocationLat(), gamePutDTO.getLocationLong(), user);
                 game.addPlayer(player);
             }
             else {
@@ -391,7 +395,10 @@ public class GameService {
                     System.out.println("Stats set for user: " + user.getUserId());
                 }
             }
-
+            // decoupling user from player so that user can join/create a new game
+            for (Player player : game.getPlayers()) {
+                player.setUser(null);
+            }
             System.out.println("Finished updating stats for game: " + game.getGameId());
         }
         catch (Exception e) {

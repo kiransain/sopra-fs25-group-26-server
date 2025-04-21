@@ -45,7 +45,7 @@ public class GameTimerService {
                 gameService.finishGame(gameId);
                 System.out.println("Game " + gameId + " has finished.");
             }
-        }, 4, TimeUnit.MINUTES);
+        }, 1, TimeUnit.MINUTES);
         finishTimers.put(gameId, future);
     }
 

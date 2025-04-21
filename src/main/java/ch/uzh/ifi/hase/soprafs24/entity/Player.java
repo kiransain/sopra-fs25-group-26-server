@@ -26,6 +26,9 @@ public class Player {
     @JoinColumn(name = "user_id", unique = true)
     private User user;
 
+    @Column
+    private String displayName;
+
     @Column()
     private PlayerStatus status;
 
@@ -126,5 +129,13 @@ public class Player {
 
     public void setRank(double rank) {
         this.rank = rank;
+    }
+
+    public String getDisplayName() {
+        return displayName;
+    }
+
+    public void setDisplayName(String displayName) {
+        this.displayName = displayName;
     }
 }

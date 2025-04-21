@@ -15,4 +15,6 @@ public interface GameRepository extends JpaRepository<Game, Long> {
     public List<Game> findByStatus(GameStatus status);
 
     public Game findByGameId(Long gameId);
+
+    public List<Game> findByStatusNot(GameStatus status);
 }

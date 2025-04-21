@@ -9,6 +9,7 @@ public class PlayerGetDTO {
 
     private Long playerId;
     private Long userId;
+    private String displayName;
     private PlayerRole role;
     private PlayerStatus status;
     private boolean outOfArea;
@@ -87,5 +88,13 @@ public class PlayerGetDTO {
 
     public void setRank(Double rank) {
         this.rank = rank;
+    }
+
+    public String getDisplayName() {
+        return displayName;
+    }
+
+    public void setDisplayName(String displayName) {
+        this.displayName = displayName;
     }
 }
