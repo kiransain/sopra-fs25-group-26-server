@@ -411,4 +411,34 @@ public class GameService {
         gameRepository.flush();
 
     }
+
+    public void deletePlayer(Long gameId, long playerId, User user) {
+        Game game = gameRepository.findByGameId(gameId);
+        if (game == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found");
+        }
+        if (game.getStatus() != GameStatus.IN_LOBBY) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Game has already started, cannot leave game");
+        }
+        Player player = playerRepository.findPlayerByPlayerId(playerId);
+        if (player == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Player not found");
+        }
+        // check if player is in that game and user is that player
+        if (game.getPlayers().contains(player) && player.getUser().getUserId().equals(user.getUserId())) {
+            //player is creator
+            if (game.getCreator().equals(player)) {
+                gameRepository.delete(game);
+            }
+            //player is not creator
+            else {
+                game.getPlayers().remove(player);
+                gameRepository.save(game);
+                gameRepository.flush();
+            }
+        }
+        else {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Player is not in that game or User is not that player");
+        }
+    }
 }

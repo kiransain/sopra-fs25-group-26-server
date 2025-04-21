@@ -68,5 +68,13 @@ public class GameController {
         Game game = gameService.updatePlayer(gameId, playerId, user);
         return DTOMapper.INSTANCE.convertEntityToGameGetDTO(game);
     }
+
+    @DeleteMapping("/games/{gameId}/players/{playerId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @ResponseBody
+    public void deletePlayer(@PathVariable Long gameId, @PathVariable Long playerId, @RequestHeader("Authorization") String authorizationHeader) {
+        User user = userService.authenticateUser(authorizationHeader);
+        gameService.deletePlayer(gameId, playerId, user);
+    }
 }
 
