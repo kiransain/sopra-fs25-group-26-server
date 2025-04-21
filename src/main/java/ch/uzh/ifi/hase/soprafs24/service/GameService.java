@@ -297,16 +297,17 @@ public class GameService {
             game.setStatus(GameStatus.FINISHED);
             gameTimerService.stopFinishTimer(game.getGameId());
             log.info("Game {} finished", game.getGameId());
-            computeRankings(game);
+            game = computeRankings(game);
             gameRepository.save(game);
             gameRepository.flush();
+
 
         }
         return game;
     }
 
 
-    public void computeRankings(Game game) {
+    public Game computeRankings(Game game) {
         // Get the list of hiders sorted with null foundTime first
         System.out.println("Computing rankings for game: " + game.getGameId());
         List<Player> hiders = game.getPlayers().stream()
@@ -350,28 +351,53 @@ public class GameService {
             }
         }
         System.out.println("Setting stats for game: " + game.getGameId());
+
         updateStats(game);
-        gameRepository.save(game);
-        gameRepository.flush();
+
+        return game;
+
     }
 
     public void updateStats(Game game) {
-        System.out.println("Updating stats for game: " + game.getGameId());
-        for (Player player : game.getPlayers()) {
-            User user = player.getUser();
-            if (player.getRank() == 1) {
-                user.getStats().put("wins", Integer.toString(Integer.parseInt(user.getStats().get("wins")) + 1));
-                user.getStats().put("gamesPlayed", Integer.toString(Integer.parseInt(user.getStats().get("gamesPlayed")) + 1));
-            }
-            else {
-                user.getStats().put("gamesPlayed", Integer.toString(Integer.parseInt(user.getStats().get("gamesPlayed")) + 1));
-            }
-        }
-        userRepository.saveAll(game.getPlayers().stream()
-                .map(Player::getUser)
-                .collect(Collectors.toList()));
-        userRepository.flush();
+        try {
+            System.out.println("Updating stats for game: " + game.getGameId());
+            Long gameId = game.getGameId();
+            Game refreshedGame = gameRepository.findByGameId(gameId);
 
+            for (Player player : refreshedGame.getPlayers()) {
+                User user = player.getUser();
+                if (player.getRank() == 1) {
+                    String winsStr = user.getStats().getOrDefault("wins", "0");
+                    String gamesPlayedStr = user.getStats().getOrDefault("gamesPlayed", "0");
+                    int wins = Integer.parseInt(winsStr);
+                    int gamesPlayed = Integer.parseInt(gamesPlayedStr);
+                    wins++;
+                    gamesPlayed++;
+                    user.getStats().put("wins", Integer.toString(wins));
+                    user.getStats().put("gamesPlayed", Integer.toString(gamesPlayed));
+                    System.out.println("Setting stats for user: " + user.getUserId());
+                    userRepository.save(user);
+                    userRepository.flush();
+                    System.out.println("Stats set for user: " + user.getUserId());
+                }
+                else {
+                    String gamesPlayedStr = user.getStats().getOrDefault("gamesPlayed", "0");
+                    int gamesPlayed = Integer.parseInt(gamesPlayedStr);
+                    gamesPlayed++;
+                    user.getStats().put("gamesPlayed", Integer.toString(gamesPlayed));
+                    System.out.println("Setting stats for user: " + user.getUserId());
+                    userRepository.save(user);
+                    userRepository.flush();
+                    System.out.println("Stats set for user: " + user.getUserId());
+                }
+            }
+
+            System.out.println("Finished updating stats for game: " + game.getGameId());
+        }
+        catch (Exception e) {
+            log.error("Error updating stats for game: " + game.getGameId(), e);
+
+        }
     }
 
     public void finishGame(Long gameId) {
@@ -380,10 +406,9 @@ public class GameService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found");
         }
         game.setStatus(GameStatus.FINISHED);
-        gameTimerService.stopFinishTimer(game.getGameId());
-        log.info("Game {} finished", game.getGameId());
-        computeRankings(game);
+        game = computeRankings(game);
         gameRepository.save(game);
         gameRepository.flush();
+
     }
 }
