@@ -57,14 +57,18 @@ bootJar {
 sonar {
   properties {
     property "sonar.projectKey", "kiransain_sopra-fs25-group-26-server"
+    property "sonar.projectName", "sopra-fs25-group-26-server"
     property "sonar.organization", "kiransain"
     property "sonar.host.url", "https://sonarcloud.io"
+    property "sonar.token", System.getenv("SONAR_TOKEN")
+    property "sonar.coverage.jacoco.xmlReportPaths", "${buildDir}/reports/jacoco/test/jacocoTestReport.xml"
   }
 }
 
 jacocoTestReport {
     reports {
         xml.enabled true
+        html.enabled true
     }
 }
 
@@ -72,15 +76,11 @@ test {
     useJUnitPlatform()
     testLogging.showStandardStreams = true
     maxParallelForks = 1
+    finalizedBy jacocoTestReport
 }
 
 tasks.named('sonar').configure {
     dependsOn jacocoTestReport
-}
-sonar {
-  properties {
-    property "sonar.coverage.jacoco.xmlReportPaths", "${buildDir}/reports/jacoco/test/jacocoTestReport.xml"
-  }
 }
 
 File secretPropsFile = file('./local.properties')
