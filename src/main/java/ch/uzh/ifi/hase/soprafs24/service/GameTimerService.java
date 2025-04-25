@@ -34,7 +34,7 @@ public class GameTimerService {
                 startFinishTimer(gameId);
                 System.out.println("Finish timer has started");
             }
-        }, 1, TimeUnit.MINUTES);
+        }, 45, TimeUnit.SECONDS);
     }
 
     public void startFinishTimer(Long gameId) {
@@ -45,7 +45,7 @@ public class GameTimerService {
                 gameService.finishGame(gameId);
                 System.out.println("Game " + gameId + " has finished.");
             }
-        }, 1, TimeUnit.MINUTES);
+        }, 60, TimeUnit.SECONDS);
         finishTimers.put(gameId, future);
     }
 

@@ -207,12 +207,12 @@ public class GameService {
         }
         // if a player wants to start game, check if it is creator
         if (gamePutDTO.isStartGame()) {
-            if (game.getCreator().getUser().getUserId().equals(user.getUserId()) && game.getPlayers().size() > 2) {
+            if (game.getCreator().getUser().getUserId().equals(user.getUserId()) && game.getPlayers().size() > 1) {
                 game.setStatus(GameStatus.IN_GAME_PREPARATION);
                 game = start(game);
             }
             else {
-                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only the creator can start the game");
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only the creator can start the game or not enough players");
             }
         }
         gameRepository.save(game);
@@ -277,6 +277,7 @@ public class GameService {
             if (player.getRole() == PlayerRole.HIDER && player.getStatus() == PlayerStatus.HIDING) {
                 player.setStatus(PlayerStatus.FOUND);
                 player.setFoundTime(LocalDateTime.now());
+                game.setRadius(game.getRadius() - 25);
                 game = checkEndCondition(game);
             }
             else {
