@@ -23,7 +23,7 @@ The following extensions can help you get started more easily:
 -   `vscjava.vscode-java-pack`
 
 **Note:** You'll need to build the project first with Gradle, just click on the `build` command in the _Gradle Tasks_ extension. Then check the _Spring Boot Dashboard_ extension if it already shows `soprafs24` and hit the play button to start the server. If it doesn't show up, restart VS Code and check again.
-
+    
 ## Building with Gradle
 You can use the local Gradle Wrapper to build the application.
 -   macOS: `./gradlew`
