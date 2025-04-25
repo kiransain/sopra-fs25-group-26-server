@@ -238,7 +238,7 @@ public class GameService {
             }
         }
         // set radius based on player count
-        double radius = 25 * players.size();
+        double radius = 25.0 * players.size();
         game.setRadius(radius);
         // set a timestamp for timer so that client can use that to display timer
         game.setTimer(LocalDateTime.now());
