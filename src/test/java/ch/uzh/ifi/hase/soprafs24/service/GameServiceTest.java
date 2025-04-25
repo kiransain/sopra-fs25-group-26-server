@@ -589,6 +589,7 @@ public class GameServiceTest {
     }
 
 
+
     @Test
     public void updatePlayer_fail_gameNotFound() {
         // given
