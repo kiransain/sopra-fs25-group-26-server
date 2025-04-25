@@ -330,7 +330,7 @@ public class GameServiceTest {
 
         assertEquals(GameStatus.IN_GAME_PREPARATION, updatedGame.getStatus());
         assertNotNull(updatedGame.getTimer());
-        assertNotNull(updatedGame.getRadius());
+        assertTrue(updatedGame.getRadius() > 0.0);
         assertTrue(updatedGame.getPlayers().stream().anyMatch(p -> p.getRole() == PlayerRole.HUNTER));
         assertTrue(updatedGame.getPlayers().stream().anyMatch(p -> p.getRole() == PlayerRole.HIDER));
     }
@@ -561,7 +561,7 @@ public class GameServiceTest {
 
         // This player is the only hider
         Player hunter = new Player(); hunter.setPlayerId(11L); hunter.setUser(testUserJoiner); hunter.setRole(PlayerRole.HUNTER); hunter.setStatus(PlayerStatus.HUNTING);
-        testGame.setPlayers(new ArrayList<>(List.of(testPlayerCreator, hunter))); // Only hider and hunter
+        testGame.setPlayers(new ArrayList<>(List.of(testPlayerCreator, hunter))); // Only 1 hider and 1 hunter
 
         given(gameRepository.findByGameId(testGame.getGameId())).willReturn(testGame);
 
