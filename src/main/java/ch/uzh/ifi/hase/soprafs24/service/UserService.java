@@ -3,6 +3,7 @@ package ch.uzh.ifi.hase.soprafs24.service;
 import ch.uzh.ifi.hase.soprafs24.entity.User;
 import ch.uzh.ifi.hase.soprafs24.repository.UserRepository;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.UserPostDTO;
+import ch.uzh.ifi.hase.soprafs24.rest.dto.UserPutDTO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -97,6 +98,23 @@ public class UserService {
         else {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Not own profile");
         }
+    }
+
+    public void updateUser(long userId, UserPutDTO userPutDTO, User user) {
+        User userToBeUpdated = userRepository.findById(userId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+        if (!user.getUserId().equals(userToBeUpdated.getUserId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You can only update your own profile");
+        }
+
+        if (userPutDTO.getProfilePicture() != null && !userPutDTO.getProfilePicture().isEmpty()) {
+            userToBeUpdated.setProfilePicture(userPutDTO.getProfilePicture());
+        }
+        if (userPutDTO.getPassword() != null && !userPutDTO.getPassword().isEmpty()) {
+            userToBeUpdated.setPassword(userPutDTO.getPassword());
+        }
+
+        userRepository.save(userToBeUpdated);
+        userRepository.flush();
     }
 
     /**
