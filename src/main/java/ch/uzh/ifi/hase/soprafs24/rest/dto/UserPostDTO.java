@@ -6,6 +6,8 @@ public class UserPostDTO {
 
     private String password;
 
+    private String profilePicture;
+
 
     public String getUsername() {
         return username;
@@ -21,5 +23,13 @@ public class UserPostDTO {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public String getProfilePicture() {
+        return profilePicture;
+    }
+
+    public void setProfilePicture(String profilePicture) {
+        this.profilePicture = profilePicture;
     }
 }

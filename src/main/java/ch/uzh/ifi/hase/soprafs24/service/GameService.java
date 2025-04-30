@@ -60,6 +60,7 @@ public class GameService {
 
         Player player = new Player();
         player.setDisplayName(user.getUsername());
+        player.setDisplayPicture(user.getProfilePicture());
         player.setLocationLat(locationLatitude);
         player.setLocationLong(locationLongitude);
         player.setUser(user);
@@ -374,12 +375,16 @@ public class GameService {
                 if (player.getRank() == 1) {
                     String winsStr = user.getStats().getOrDefault("wins", "0");
                     String gamesPlayedStr = user.getStats().getOrDefault("gamesPlayed", "0");
+                    String pointsStr = user.getStats().getOrDefault("points", "0");
                     int wins = Integer.parseInt(winsStr);
                     int gamesPlayed = Integer.parseInt(gamesPlayedStr);
+                    int points = Integer.parseInt(pointsStr);
                     wins++;
                     gamesPlayed++;
+                    points += 10;
                     user.getStats().put("wins", Integer.toString(wins));
                     user.getStats().put("gamesPlayed", Integer.toString(gamesPlayed));
+                    user.getStats().put("points", Integer.toString(points));
                     System.out.println("Setting stats for user: " + user.getUserId());
                     userRepository.save(user);
                     userRepository.flush();
@@ -387,9 +392,13 @@ public class GameService {
                 }
                 else {
                     String gamesPlayedStr = user.getStats().getOrDefault("gamesPlayed", "0");
+                    String pointsStr = user.getStats().getOrDefault("points", "0");
                     int gamesPlayed = Integer.parseInt(gamesPlayedStr);
+                    int points = Integer.parseInt(pointsStr);
                     gamesPlayed++;
+                    points += Math.max(0, 10 - (10 * (player.getRank() - 1) / (game.getPlayers().size() - 1)));
                     user.getStats().put("gamesPlayed", Integer.toString(gamesPlayed));
+                    user.getStats().put("points", Integer.toString(points));
                     System.out.println("Setting stats for user: " + user.getUserId());
                     userRepository.save(user);
                     userRepository.flush();

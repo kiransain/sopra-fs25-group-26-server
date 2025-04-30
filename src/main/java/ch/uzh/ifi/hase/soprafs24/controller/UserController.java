@@ -33,8 +33,8 @@ public class UserController {
     @GetMapping("/users")
     @ResponseStatus(HttpStatus.OK)
     @ResponseBody
-    public List<UserGetDTO> getAllUsers() {
-        // fetch all users in the internal representation
+    public List<UserGetDTO> getAllUsers(@RequestHeader("Authorization") String authorizationHeader) {
+        User requestingUser = userService.authenticateUser(authorizationHeader);
         List<User> users = userService.getUsers();
         List<UserGetDTO> userGetDTOs = new ArrayList<>();
 

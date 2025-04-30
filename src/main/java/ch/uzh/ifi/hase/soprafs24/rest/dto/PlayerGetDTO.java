@@ -10,6 +10,7 @@ public class PlayerGetDTO {
     private Long playerId;
     private Long userId;
     private String displayName;
+    private String displayPicture;
     private PlayerRole role;
     private PlayerStatus status;
     private boolean outOfArea;
@@ -96,5 +97,13 @@ public class PlayerGetDTO {
 
     public void setDisplayName(String displayName) {
         this.displayName = displayName;
+    }
+
+    public String getDisplayPicture() {
+        return displayPicture;
+    }
+
+    public void setDisplayPicture(String displayPicture) {
+        this.displayPicture = displayPicture;
     }
 }

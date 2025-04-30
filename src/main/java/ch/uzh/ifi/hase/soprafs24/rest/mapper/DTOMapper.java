@@ -31,6 +31,7 @@ public interface DTOMapper {
 
     @Mapping(source = "username", target = "username")
     @Mapping(source = "password", target = "password")
+    @Mapping(source = "profilePicture", target = "profilePicture")
     @Mapping(target = "token", ignore = true)
     @Mapping(target = "stats", ignore = true)
     @Mapping(target = "userId", ignore = true)
@@ -38,6 +39,7 @@ public interface DTOMapper {
 
     @Mapping(source = "userId", target = "userId")
     @Mapping(source = "username", target = "username")
+    @Mapping(source = "profilePicture", target = "profilePicture")
     @Mapping(source = "token", target = "token")
     @Mapping(source = "stats", target = "stats")
     UserGetDTO convertEntityToUserGetDTO(User user);
@@ -58,6 +60,7 @@ public interface DTOMapper {
     @Mapping(source = "playerId", target = "playerId")
     @Mapping(source = "user.userId", target = "userId")
     @Mapping(source = "displayName", target = "displayName")
+    @Mapping(source = "displayPicture", target = "displayPicture")
     @Mapping(source = "role", target = "role")
     @Mapping(source = "status", target = "status")
     @Mapping(source = "outOfArea", target = "outOfArea")
