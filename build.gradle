@@ -5,7 +5,7 @@ plugins {
     id 'idea'
     id "jacoco"
     // id "org.sonarqube" version "4.4.1.3373"
-    id "org.sonarqube" version "6.0.1.5171" // update sonarqube properties
+    id "org.sonarqube" version "6.0.1.5171"// update sonarqube properties
 }
 
 group 'ch.uzh.ifi.hasel'
@@ -57,7 +57,6 @@ bootJar {
 sonar {
   properties {
     property "sonar.projectKey", "kiransain_sopra-fs25-group-26-server"
-    property "sonar.projectName", "sopra-fs25-group-26-server"
     property "sonar.organization", "kiransain"
     property "sonar.host.url", "https://sonarcloud.io"
     property "sonar.token", System.getenv("SONAR_TOKEN")
@@ -68,8 +67,8 @@ sonar {
 jacocoTestReport {
     reports {
         xml.enabled true
-        html.enabled true
-         xml.outputLocation = file("${buildDir}/reports/jacoco/test/jacocoTestReport.xml")
+        html.enabled false
+        xml.outputLocation = file("${buildDir}/reports/jacoco/test/jacocoTestReport.xml")
     }
 }
 
