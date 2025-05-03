@@ -3,6 +3,7 @@ package ch.uzh.ifi.hase.soprafs24.service;
 import ch.uzh.ifi.hase.soprafs24.entity.User;
 import ch.uzh.ifi.hase.soprafs24.repository.UserRepository;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.UserPostDTO;
+import ch.uzh.ifi.hase.soprafs24.rest.dto.UserPutDTO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,10 +43,16 @@ public class UserService {
     public User createUser(User newUser) {
         newUser.setToken(UUID.randomUUID().toString());
 
+        if (newUser.getProfilePicture() == null || newUser.getProfilePicture().isEmpty()) {
+            newUser.setProfilePicture("https://ui-avatars.com/api/?name=" + urlEncode(newUser.getUsername())
+                    + "&length=1&rounded=true&size=128");
+        }
+
         Map<String, String> stats = new HashMap<>();
         stats.put("creation_date", new SimpleDateFormat("dd.MM.yyyy").format(new Date()));
-        stats.put("games_played", "0");
-        stats.put("games_won", "0");
+        stats.put("gamesPlayed", "0");
+        stats.put("wins", "0");
+        stats.put("points", "0");
         newUser.setStats(stats);
 
         checkIfUserExists(newUser);
@@ -93,6 +100,23 @@ public class UserService {
         }
     }
 
+    public void updateUser(long userId, UserPutDTO userPutDTO, User user) {
+        User userToBeUpdated = userRepository.findById(userId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+        if (!user.getUserId().equals(userToBeUpdated.getUserId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You can only update your own profile");
+        }
+
+        if (userPutDTO.getProfilePicture() != null && !userPutDTO.getProfilePicture().isEmpty()) {
+            userToBeUpdated.setProfilePicture(userPutDTO.getProfilePicture());
+        }
+        if (userPutDTO.getPassword() != null && !userPutDTO.getPassword().isEmpty()) {
+            userToBeUpdated.setPassword(userPutDTO.getPassword());
+        }
+
+        userRepository.save(userToBeUpdated);
+        userRepository.flush();
+    }
+
     /**
      * This is a helper method that will check the uniqueness criteria of the
      * username and the name
@@ -109,6 +133,15 @@ public class UserService {
         String baseErrorMessage = "The username provided is not unique. Therefore, the user could not be created!";
         if (userByUsername != null) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, baseErrorMessage);
+        }
+    }
+
+    private String urlEncode(String value) {
+        try {
+            return java.net.URLEncoder.encode(value, java.nio.charset.StandardCharsets.UTF_8.toString());
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 }

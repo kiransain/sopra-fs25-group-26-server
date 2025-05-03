@@ -29,6 +29,9 @@ public class Player {
     @Column
     private String displayName;
 
+    @Column
+    private String displayPicture;
+
     @Column()
     private PlayerStatus status;
 
@@ -137,5 +140,13 @@ public class Player {
 
     public void setDisplayName(String displayName) {
         this.displayName = displayName;
+    }
+
+    public String getDisplayPicture() {
+        return displayPicture;
+    }
+
+    public void setDisplayPicture(String displayPicture) {
+        this.displayPicture = displayPicture;
     }
 }

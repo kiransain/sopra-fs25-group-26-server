@@ -5,6 +5,7 @@ import java.util.Map;
 public class UserGetDTO {
 
     private Long userId;
+    private String profilePicture;
     private String username;
     private String token;
     private Map<String, String> stats;
@@ -40,5 +41,13 @@ public class UserGetDTO {
 
     public void setToken(String token) {
         this.token = token;
+    }
+
+    public String getProfilePicture() {
+        return profilePicture;
+    }
+
+    public void setProfilePicture(String profilePicture) {
+        this.profilePicture = profilePicture;
     }
 }
