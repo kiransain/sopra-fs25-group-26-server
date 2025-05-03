@@ -59,7 +59,6 @@ sonar {
     property "sonar.projectKey", "kiransain_sopra-fs25-group-26-server"
     property "sonar.organization", "kiransain"
     property "sonar.host.url", "https://sonarcloud.io"
-    property "sonar.token", System.getenv("SONAR_TOKEN")
     property "sonar.coverage.jacoco.xmlReportPaths", "${buildDir}/reports/jacoco/test/jacocoTestReport.xml"
   }
 }
