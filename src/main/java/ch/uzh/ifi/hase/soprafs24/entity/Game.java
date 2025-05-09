@@ -37,6 +37,12 @@ public class Game implements Serializable {
     @Column()
     private LocalDateTime timer;
 
+    @Column()
+    private Integer preparationTimeInSeconds;
+
+    @Column()
+    private Integer gameTimeInSeconds;
+
     @OneToOne
     @JoinColumn(name = "creator_id")
     private Player creator;
@@ -123,5 +129,21 @@ public class Game implements Serializable {
 
     public void setTimer(LocalDateTime timer) {
         this.timer = timer;
+    }
+
+    public Integer getGameTimeInSeconds() {
+        return gameTimeInSeconds;
+    }
+
+    public void setGameTimeInSeconds(Integer gameTimeInSeconds) {
+        this.gameTimeInSeconds = gameTimeInSeconds;
+    }
+
+    public Integer getPreparationTimeInSeconds() {
+        return preparationTimeInSeconds;
+    }
+
+    public void setPreparationTimeInSeconds(Integer preparationTimeInSeconds) {
+        this.preparationTimeInSeconds = preparationTimeInSeconds;
     }
 }

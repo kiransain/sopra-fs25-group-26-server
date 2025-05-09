@@ -9,6 +9,7 @@ import ch.uzh.ifi.hase.soprafs24.entity.User;
 import ch.uzh.ifi.hase.soprafs24.repository.GameRepository;
 import ch.uzh.ifi.hase.soprafs24.repository.PlayerRepository;
 import ch.uzh.ifi.hase.soprafs24.repository.UserRepository;
+import ch.uzh.ifi.hase.soprafs24.rest.dto.GamePostDTO;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.GamePutDTO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -69,21 +70,42 @@ public class GameService {
         return player;
     }
 
-    public Game createGame(String gamename, Player player) {
+    public Game createGame(GamePostDTO gamePostDTO, User creator) {
         List<Game> activeGames = gameRepository.findByStatusNot(GameStatus.FINISHED);
 
         boolean nameTaken = activeGames.stream()
-                .anyMatch(game -> game.getGamename().equals(gamename));
+                .anyMatch(game -> game.getGamename().equals(gamePostDTO.getGamename()));
 
         if (nameTaken) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Gamename already exists");
         }
 
+        int prepTime = gamePostDTO.getPreparationTimeInSeconds() != null ? gamePostDTO.getPreparationTimeInSeconds() : 30;
+        if (prepTime < 10 || prepTime > 300) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Preparation time must be between 10 and 300 seconds");
+        }
+
+        int gameTime = gamePostDTO.getGameTimeInSeconds() != null ? gamePostDTO.getGameTimeInSeconds() : 300;
+        if (gameTime < 60 || gameTime > 900) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Game time must be between 60 and 900 seconds");
+        }
+
+        double radiusPerPlayer = gamePostDTO.getRadius();
+        if (radiusPerPlayer < 5.0 || radiusPerPlayer > 100.0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Radius must be between 5 and 100 meters");
+        }
+
+        Player player = createPlayer(gamePostDTO.getLocationLat(), gamePostDTO.getLocationLong(), creator);
+
         Game game = new Game();
-        game.setGamename(gamename);
+        game.setGamename(gamePostDTO.getGamename());
         game.addPlayer(player);
         game.setStatus(GameStatus.IN_LOBBY);
         game.setCreator(player);
+        game.setPreparationTimeInSeconds(prepTime);
+        game.setGameTimeInSeconds(gameTime);
+        game.setRadius(radiusPerPlayer);
+
         gameRepository.save(game);
         gameRepository.flush();
         return game;
@@ -239,12 +261,12 @@ public class GameService {
             }
         }
         // set radius based on player count
-        double radius = 25 * players.size();
+        double radius = game.getRadius() * players.size();
         game.setRadius(radius);
         // set a timestamp for timer so that client can use that to display timer
         game.setTimer(LocalDateTime.now());
         //start scheduler to change status after timer runs out
-        gameTimerService.startPreparationTimer(game.getGameId());
+        gameTimerService.startPreparationTimer(game.getGameId(), game.getPreparationTimeInSeconds(), game.getGameTimeInSeconds());
 
         gameRepository.save(game);
         gameRepository.flush();
@@ -272,13 +294,14 @@ public class GameService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Player not found");
         }
 
-        //check if player is in that game and user it that player and Game is in Game
+        //check if player is in that game and user is that player and Game is in Game
         if (game.getPlayers().contains(player) && player.getUser().getUserId().equals(user.getUserId()) && game.getStatus() == GameStatus.IN_GAME) {
             //check if player is hider and not found yet
             if (player.getRole() == PlayerRole.HIDER && player.getStatus() == PlayerStatus.HIDING) {
                 player.setStatus(PlayerStatus.FOUND);
                 player.setFoundTime(LocalDateTime.now());
-                game.setRadius(game.getRadius() - 25);
+                double newRadius = game.getRadius() * 0.6;
+                game.setRadius(Math.max(newRadius, 5));
                 game = checkEndCondition(game);
             }
             else {

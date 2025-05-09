@@ -50,6 +50,8 @@ public interface DTOMapper {
     @Mapping(source = "centerLatitude", target = "centerLatitude")
     @Mapping(source = "centerLongitude", target = "centerLongitude")
     @Mapping(source = "radius", target = "radius")
+    @Mapping(source = "preparationTimeInSeconds", target = "preparationTimeInSeconds")
+    @Mapping(source = "gameTimeInSeconds", target = "gameTimeInSeconds")
     @Mapping(source = "timer", target = "timer")
     @Mapping(source = "creator.playerId", target = "creatorId")
     @Mapping(source = "players", target = "players")

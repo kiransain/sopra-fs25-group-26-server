@@ -1,7 +1,6 @@
 package ch.uzh.ifi.hase.soprafs24.controller;
 
 import ch.uzh.ifi.hase.soprafs24.entity.Game;
-import ch.uzh.ifi.hase.soprafs24.entity.Player;
 import ch.uzh.ifi.hase.soprafs24.entity.User;
 import ch.uzh.ifi.hase.soprafs24.repository.GameRepository;
 import ch.uzh.ifi.hase.soprafs24.repository.UserRepository;
@@ -36,8 +35,7 @@ public class GameController {
     @ResponseBody
     public GameGetDTO createGame(@RequestBody GamePostDTO gamePostDTO, @RequestHeader("Authorization") String authorizationHeader) {
         User creator = userService.authenticateUser(authorizationHeader);
-        Player player = gameService.createPlayer(gamePostDTO.getLocationLat(), gamePostDTO.getLocationLong(), creator);
-        Game game = gameService.createGame(gamePostDTO.getGamename(), player);
+        Game game = gameService.createGame(gamePostDTO, creator);
         return DTOMapper.INSTANCE.convertEntityToGameGetDTO(game);
 
     }
