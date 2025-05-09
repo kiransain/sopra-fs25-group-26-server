@@ -9,6 +9,7 @@ import ch.uzh.ifi.hase.soprafs24.entity.User;
 import ch.uzh.ifi.hase.soprafs24.repository.GameRepository;
 import ch.uzh.ifi.hase.soprafs24.repository.PlayerRepository;
 import ch.uzh.ifi.hase.soprafs24.repository.UserRepository;
+import ch.uzh.ifi.hase.soprafs24.rest.dto.GameCenterDTO;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.GamePostDTO;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.GamePutDTO;
 import org.slf4j.Logger;
@@ -138,6 +139,37 @@ public class GameService {
         return game;
     }
 
+    public Game updateGameCenter(long gameId, GameCenterDTO gameCenterDTO, User user) {
+        // ensures game is in inGame and requesting user is the hunter of that game
+        Game game = gameRepository.findByGameId(gameId);
+        if (game == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found");
+        }
+        if (game.getStatus() != GameStatus.IN_GAME) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Game must be in progress to update center");
+        }
+
+        Player requestingPlayer = game.getPlayers().stream()
+                .filter(p -> p.getUser().getUserId().equals(user.getUserId()))
+                .findFirst()
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "User is not in game"));
+        if (requestingPlayer.getRole() != PlayerRole.HUNTER) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only the hunter can update the game center");
+        }
+
+        if (calculateDistance(game.getCenterLatitude(), game.getCenterLongitude(), gameCenterDTO.getLatitude(), gameCenterDTO.getLongitude()) <= game.getRadius()) {
+            game.setCenterLatitude(gameCenterDTO.getLatitude());
+            game.setCenterLongitude(gameCenterDTO.getLongitude());
+        }
+        else {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "New center is out of current game area");
+        }
+
+        gameRepository.save(game);
+        gameRepository.flush();
+        return game;
+    }
+
     public Game handleInGame(Game game, User user, GamePutDTO gamePutDTO) {
         boolean alreadyJoined = game.getPlayers().stream()
                 .anyMatch(player -> player.getUser().getUserId().equals(user.getUserId()));
@@ -182,7 +214,7 @@ public class GameService {
         double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
         // Distance = Earth's radius * c * 1000 - 5 (tolerance because of GPS)
-        return (EARTH_RADIUS * c * 1000) - 5;
+        return Math.max((EARTH_RADIUS * c * 1000) - 5, 0);
     }
 
     public Game handleInGamePreparation(Game game, User user, GamePutDTO gamePutDTO) {
