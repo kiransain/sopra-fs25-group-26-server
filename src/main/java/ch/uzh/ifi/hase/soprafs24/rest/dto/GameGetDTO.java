@@ -12,6 +12,8 @@ public class GameGetDTO {
     private GameStatus status;
     private Double centerLatitude;
     private Double centerLongitude;
+    private Integer preparationTimeInSeconds;
+    private Integer gameTimeInSeconds;
     private LocalDateTime timer;
     private Double radius;
     private Long creatorId; // ID of the player (not User)
@@ -87,5 +89,21 @@ public class GameGetDTO {
 
     public void setTimer(LocalDateTime timer) {
         this.timer = timer;
+    }
+
+    public Integer getPreparationTimeInSeconds() {
+        return preparationTimeInSeconds;
+    }
+
+    public void setPreparationTimeInSeconds(Integer preparationTimeInSeconds) {
+        this.preparationTimeInSeconds = preparationTimeInSeconds;
+    }
+
+    public Integer getGameTimeInSeconds() {
+        return gameTimeInSeconds;
+    }
+
+    public void setGameTimeInSeconds(Integer gameTimeInSeconds) {
+        this.gameTimeInSeconds = gameTimeInSeconds;
     }
 }

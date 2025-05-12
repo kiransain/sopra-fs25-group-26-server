@@ -22,7 +22,7 @@ public class GameTimerService {
     @Autowired
     private GameService gameService;
 
-    public void startPreparationTimer(Long gameId) {
+    public void startPreparationTimer(Long gameId, int preparationTimeInSeconds, int gameTimeInSeconds) {
         scheduler.schedule(() -> {
             Game game = gameRepository.findById(gameId).orElse(null);
             if (game != null && game.getStatus() == GameStatus.IN_GAME_PREPARATION) {
@@ -31,13 +31,13 @@ public class GameTimerService {
                 gameRepository.save(game);
                 gameRepository.flush();
                 System.out.println("Game " + gameId + " has started.");
-                startFinishTimer(gameId);
+                startFinishTimer(gameId, gameTimeInSeconds);
                 System.out.println("Finish timer has started");
             }
-        }, 45, TimeUnit.SECONDS);
+        }, preparationTimeInSeconds, TimeUnit.SECONDS);
     }
 
-    public void startFinishTimer(Long gameId) {
+    public void startFinishTimer(Long gameId, int gameTimeInSeconds) {
         ScheduledFuture<?> future = scheduler.schedule(() -> {
             System.out.println("Game " + gameId + " is about to finish.");
             Game game = gameRepository.findById(gameId).orElse(null);
@@ -45,7 +45,7 @@ public class GameTimerService {
                 gameService.finishGame(gameId);
                 System.out.println("Game " + gameId + " has finished.");
             }
-        }, 60, TimeUnit.SECONDS);
+        }, gameTimeInSeconds, TimeUnit.SECONDS);
         finishTimers.put(gameId, future);
     }
 

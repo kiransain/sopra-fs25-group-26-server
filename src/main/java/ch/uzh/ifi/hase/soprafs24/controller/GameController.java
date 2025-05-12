@@ -1,10 +1,10 @@
 package ch.uzh.ifi.hase.soprafs24.controller;
 
 import ch.uzh.ifi.hase.soprafs24.entity.Game;
-import ch.uzh.ifi.hase.soprafs24.entity.Player;
 import ch.uzh.ifi.hase.soprafs24.entity.User;
 import ch.uzh.ifi.hase.soprafs24.repository.GameRepository;
 import ch.uzh.ifi.hase.soprafs24.repository.UserRepository;
+import ch.uzh.ifi.hase.soprafs24.rest.dto.GameCenterDTO;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.GameGetDTO;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.GamePostDTO;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.GamePutDTO;
@@ -36,8 +36,7 @@ public class GameController {
     @ResponseBody
     public GameGetDTO createGame(@RequestBody GamePostDTO gamePostDTO, @RequestHeader("Authorization") String authorizationHeader) {
         User creator = userService.authenticateUser(authorizationHeader);
-        Player player = gameService.createPlayer(gamePostDTO.getLocationLat(), gamePostDTO.getLocationLong(), creator);
-        Game game = gameService.createGame(gamePostDTO.getGamename(), player);
+        Game game = gameService.createGame(gamePostDTO, creator);
         return DTOMapper.INSTANCE.convertEntityToGameGetDTO(game);
 
     }
@@ -57,6 +56,15 @@ public class GameController {
     public GameGetDTO updateGame(@RequestBody GamePutDTO gamePutDTO, @PathVariable Long gameId, @RequestHeader("Authorization") String authorizationHeader) {
         User user = userService.authenticateUser(authorizationHeader);
         Game game = gameService.updateGame(gameId, user, gamePutDTO);
+        return DTOMapper.INSTANCE.convertEntityToGameGetDTO(game);
+    }
+
+    @PutMapping("/games/{gameId}/center")
+    @ResponseStatus(HttpStatus.OK)
+    @ResponseBody
+    public GameGetDTO updateGameCenter(@RequestBody GameCenterDTO gameCenterDTO, @PathVariable Long gameId, @RequestHeader("Authorization") String authorizationHeader) {
+        User user = userService.authenticateUser(authorizationHeader);
+        Game game = gameService.updateGameCenter(gameId, gameCenterDTO, user);
         return DTOMapper.INSTANCE.convertEntityToGameGetDTO(game);
     }
 
