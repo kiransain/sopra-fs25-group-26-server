@@ -21,13 +21,13 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
 
-
 import java.util.Optional;
 
 import static org.hamcrest.Matchers.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
  * Integration tests for game-related functionalities, focusing on interactions
@@ -82,11 +82,14 @@ public class GameIntegrationTest {
     }
 
     // Helper to create a game via API and return its DTO
-    private GameGetDTO performCreateGame(String token, String gameName, double lat, double lon) throws Exception {
+    private GameGetDTO performCreateGame(String token, String gameName, double lat, double lon, double radius, Integer prepTime, Integer gameTime) throws Exception {
         GamePostDTO gamePostDTO = new GamePostDTO();
         gamePostDTO.setGamename(gameName);
         gamePostDTO.setLocationLat(lat);
         gamePostDTO.setLocationLong(lon);
+        gamePostDTO.setRadius(radius);
+        gamePostDTO.setPreparationTimeInSeconds(prepTime);
+        gamePostDTO.setGameTimeInSeconds(gameTime);
 
         MvcResult result = mockMvc.perform(post("/games")
                         .header("Authorization", token)
@@ -133,7 +136,7 @@ public class GameIntegrationTest {
         String token = loggedInUser.getToken();
 
         // Act
-        GameGetDTO createdGame = performCreateGame(token, "Test Game", 47.0, 8.0);
+        GameGetDTO createdGame = performCreateGame(token, "Test Game", 47.0, 8.0, 10.0, 30, 300);
 
 
         // Assert API Response
@@ -166,7 +169,7 @@ public class GameIntegrationTest {
         performCreateUser("joiner", "password");
         UserGetDTO creator = performLoginUser("creator", "password");
         UserGetDTO joiner = performLoginUser("joiner", "password");
-        GameGetDTO game = performCreateGame(creator.getToken(), "Join Test", 47.0, 8.0);
+        GameGetDTO game = performCreateGame(creator.getToken(), "Join Test", 47.0, 8.0, 10.0, 30, 300);
         Long gameId = game.getGameId();
 
         // Act & Assert API Response
@@ -191,7 +194,7 @@ public class GameIntegrationTest {
         UserGetDTO creator = performLoginUser("creator", "password");
         UserGetDTO p2 = performLoginUser("p2", "password");
         UserGetDTO p3 = performLoginUser("p3", "password");
-        GameGetDTO game = performCreateGame(creator.getToken(), "Start Test", 47.0, 8.0);
+        GameGetDTO game = performCreateGame(creator.getToken(), "Start Test", 47.0, 8.0, 10, 30, 300);
         Long gameId = game.getGameId();
         performUpdateGame(p2.getToken(), gameId, 47.1, 8.1, false).andExpect(status().isOk());
         performUpdateGame(p3.getToken(), gameId, 47.2, 8.2, false).andExpect(status().isOk());
@@ -219,7 +222,7 @@ public class GameIntegrationTest {
         UserGetDTO hunterUser = performCreateUser("hunterGH", "password"); // Hunter
         UserGetDTO loggedInCreator = performLoginUser("creatorGH", "password");
         UserGetDTO loggedInHunter = performLoginUser("hunterGH", "password");
-        GameGetDTO gameDTO = performCreateGame(loggedInCreator.getToken(), "Finish Test", 47.0, 8.0);
+        GameGetDTO gameDTO = performCreateGame(loggedInCreator.getToken(), "Finish Test", 47.0, 8.0, 10.0, 30, 300);
         Long gameId = gameDTO.getGameId();
         performUpdateGame(loggedInHunter.getToken(), gameId, 47.1, 8.1, false).andExpect(status().isOk());
 
@@ -268,7 +271,7 @@ public class GameIntegrationTest {
         performCreateUser("p2L", "password");
         UserGetDTO creator = performLoginUser("creatorL", "password");
         UserGetDTO p2 = performLoginUser("p2L", "password");
-        GameGetDTO game = performCreateGame(creator.getToken(), "Leave Test", 47.0, 8.0);
+        GameGetDTO game = performCreateGame(creator.getToken(), "Leave Test", 47.0, 8.0, 10.0, 30, 300);
         Long gameId = game.getGameId();
         MvcResult joinResult = performUpdateGame(p2.getToken(), gameId, 47.1, 8.1, false)
                 .andExpect(status().isOk())
@@ -296,7 +299,7 @@ public class GameIntegrationTest {
         // Arrange
         performCreateUser("creatorD", "password");
         UserGetDTO creator = performLoginUser("creatorD", "password");
-        GameGetDTO game = performCreateGame(creator.getToken(), "Delete Test", 47.0, 8.0);
+        GameGetDTO game = performCreateGame(creator.getToken(), "Delete Test", 47.0, 8.0, 10.0, 30, 300);
         Long gameId = game.getGameId();
         Long creatorPlayerId = game.getPlayers().get(0).getPlayerId();
 

@@ -1,14 +1,12 @@
 package ch.uzh.ifi.hase.soprafs24.controller;
 
 import ch.uzh.ifi.hase.soprafs24.constant.GameStatus;
-import ch.uzh.ifi.hase.soprafs24.constant.PlayerRole;
-import ch.uzh.ifi.hase.soprafs24.constant.PlayerStatus;
 import ch.uzh.ifi.hase.soprafs24.entity.Game;
 import ch.uzh.ifi.hase.soprafs24.entity.Player;
 import ch.uzh.ifi.hase.soprafs24.entity.User;
 import ch.uzh.ifi.hase.soprafs24.repository.GameRepository;
-import ch.uzh.ifi.hase.soprafs24.repository.PlayerRepository;
 import ch.uzh.ifi.hase.soprafs24.repository.UserRepository;
+import ch.uzh.ifi.hase.soprafs24.rest.dto.GameCenterDTO;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.GamePostDTO;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.GamePutDTO;
 import ch.uzh.ifi.hase.soprafs24.service.GameService;
@@ -17,7 +15,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -27,29 +24,27 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyDouble;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/**
- * Test class for the Game REST controller.
- *
- * @see GameController
- */
 @WebMvcTest(GameController.class)
 public class GameControllerTest {
+
+    private final String VALID_TOKEN = "Bearer valid-token";
+    private final String INVALID_TOKEN = "Bearer invalid-token";
 
     @Autowired
     private MockMvc mockMvc;
@@ -61,479 +56,430 @@ public class GameControllerTest {
     private UserService userService;
 
     @MockBean
-    private GameRepository gameRepository; // Required for Controller context loading
+    private UserRepository userRepository;
 
     @MockBean
-    private UserRepository userRepository; // Required for Controller context loading
-
-    @MockBean
-    private PlayerRepository playerRepository; // Required for Controller context loading
+    private GameRepository gameRepository;
 
     private User testUser;
     private Player testPlayer;
     private Game testGame;
-    private String validToken;
+    private GamePostDTO testGamePostDTO;
+    private GamePutDTO testGamePutDTO;
 
     @BeforeEach
-    void setUp() {
-        validToken = "valid-token";
+    public void setup() {
+        // User setup
         testUser = new User();
         testUser.setUserId(1L);
-        testUser.setUsername("creator");
-        testUser.setToken(validToken);
+        testUser.setUsername("Tester");
+        testUser.setPassword("Test_Password");
+        testUser.setToken("valid-token");
+        testUser.setProfilePicture("https://example.com/profile.jpg");
+        testUser.setStats(new HashMap<>());
 
+        // Player setup
         testPlayer = new Player();
         testPlayer.setPlayerId(10L);
         testPlayer.setUser(testUser);
-        testPlayer.setLocationLat(47.3769);
-        testPlayer.setLocationLong(8.5417);
         testPlayer.setDisplayName(testUser.getUsername());
-        testPlayer.setRole(PlayerRole.HIDER);
-        testPlayer.setStatus(PlayerStatus.HIDING);
+        testPlayer.setDisplayPicture(testUser.getProfilePicture());
+        testPlayer.setLocationLat(47.0);
+        testPlayer.setLocationLong(8.0);
 
+
+        // Game setup
         testGame = new Game();
         testGame.setGameId(100L);
         testGame.setGamename("Test Game");
         testGame.setStatus(GameStatus.IN_LOBBY);
         testGame.setCreator(testPlayer);
-        testGame.setCenterLatitude(47.3769);
-        testGame.setCenterLongitude(8.5417);
+        testGame.setCenterLatitude(47.0);
+        testGame.setCenterLongitude(8.0);
         testGame.setRadius(100.0);
-        testGame.setTimer(LocalDateTime.now().minusMinutes(5));
-        testGame.setPlayers(new ArrayList<>(List.of(testPlayer))); // Use mutable list
+        testGame.setPreparationTimeInSeconds(30);
+        testGame.setGameTimeInSeconds(300);
+        testGame.setPlayers(new ArrayList<>(List.of(testPlayer)));
         testPlayer.setGame(testGame);
 
-        // Default authentication mock
-        given(userService.authenticateUser(validToken)).willReturn(testUser);
+        // DTO setup
+        testGamePostDTO = new GamePostDTO();
+        testGamePostDTO.setGamename("Test Game");
+        testGamePostDTO.setLocationLat(47.0);
+        testGamePostDTO.setLocationLong(8.0);
+        testGamePostDTO.setRadius(100.0);
+        testGamePostDTO.setPreparationTimeInSeconds(30);
+        testGamePostDTO.setGameTimeInSeconds(300);
+
+        testGamePutDTO = new GamePutDTO();
+        testGamePutDTO.setLocationLat(47.1);
+        testGamePutDTO.setLocationLong(8.1);
+        testGamePutDTO.setStartGame(false);
     }
 
-    @Test
-    public void createGame_validInput_gameCreated() throws Exception {
-        // given
-        GamePostDTO gamePostDTO = new GamePostDTO();
-        gamePostDTO.setGamename("New Game");
-        gamePostDTO.setLocationLat(47.0);
-        gamePostDTO.setLocationLong(8.0);
-
-        given(userService.authenticateUser(validToken)).willReturn(testUser);
-        given(gameService.createPlayer(anyDouble(), anyDouble(), eq(testUser))).willReturn(testPlayer);
-        given(gameService.createGame(eq("New Game"), eq(testPlayer))).willReturn(testGame);
-
-        // when
-        MockHttpServletRequestBuilder postRequest = post("/games")
-                .header("Authorization", validToken)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(asJsonString(gamePostDTO));
-
-        // then
-        mockMvc.perform(postRequest)
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.gameId", is(testGame.getGameId().intValue())))
-                .andExpect(jsonPath("$.gamename", is(testGame.getGamename())))
-                .andExpect(jsonPath("$.status", is(testGame.getStatus().toString())))
-                .andExpect(jsonPath("$.creatorId", is(testPlayer.getPlayerId().intValue())))
-                .andExpect(jsonPath("$.players", hasSize(1)))
-                .andExpect(jsonPath("$.players[0].playerId", is(testPlayer.getPlayerId().intValue())))
-                .andExpect(jsonPath("$.players[0].userId", is(testUser.getUserId().intValue())));
+    /**
+     * Converts Object to JSON String
+     */
+    private String asJsonString(final Object object) {
+        try {
+            return new ObjectMapper().writeValueAsString(object);
+        }
+        catch (JsonProcessingException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    String.format("The request body could not be created.%s", e.toString()));
+        }
     }
 
+    // GET /games - Get all joinable games
     @Test
-    public void createGame_gamenameConflict_throwsConflict() throws Exception {
+    public void givenGames_whenGetGames_thenReturnJsonArray() throws Exception {
         // given
-        GamePostDTO gamePostDTO = new GamePostDTO();
-        gamePostDTO.setGamename("Existing Game");
-        gamePostDTO.setLocationLat(47.0);
-        gamePostDTO.setLocationLong(8.0);
+        List<Game> allJoinableGames = Collections.singletonList(testGame);
+        given(userService.authenticateUser(VALID_TOKEN)).willReturn(testUser);
+        given(gameService.getJoinableGames()).willReturn(allJoinableGames);
 
-        given(userService.authenticateUser(validToken)).willReturn(testUser);
-        given(gameService.createPlayer(anyDouble(), anyDouble(), eq(testUser))).willReturn(testPlayer);
-        given(gameService.createGame(eq("Existing Game"), eq(testPlayer)))
-                .willThrow(new ResponseStatusException(HttpStatus.CONFLICT, "Gamename already exists"));
-
-        // when
-        MockHttpServletRequestBuilder postRequest = post("/games")
-                .header("Authorization", validToken)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(asJsonString(gamePostDTO));
-
-        // then
-        mockMvc.perform(postRequest)
-                .andExpect(status().isConflict());
-    }
-
-    @Test
-    public void createGame_userAlreadyPlayer_throwsConflict() throws Exception {
-        // given
-        GamePostDTO gamePostDTO = new GamePostDTO();
-        gamePostDTO.setGamename("Another Game");
-        gamePostDTO.setLocationLat(47.0);
-        gamePostDTO.setLocationLong(8.0);
-
-        given(userService.authenticateUser(validToken)).willReturn(testUser);
-        given(gameService.createPlayer(anyDouble(), anyDouble(), eq(testUser)))
-                .willThrow(new ResponseStatusException(HttpStatus.CONFLICT, "User is already a Player"));
-
-        // when
-        MockHttpServletRequestBuilder postRequest = post("/games")
-                .header("Authorization", validToken)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(asJsonString(gamePostDTO));
-
-        // then
-        mockMvc.perform(postRequest)
-                .andExpect(status().isConflict());
-    }
-
-    @Test
-    public void getAllGames_success_returnsJoinableGames() throws Exception {
-        // given
-        testGame.setStatus(GameStatus.IN_LOBBY);
-        List<Game> joinableGames = Collections.singletonList(testGame);
-
-        given(userService.authenticateUser(validToken)).willReturn(testUser);
-        given(gameService.getJoinableGames()).willReturn(joinableGames);
-
-        // when
+        // when/then
         MockHttpServletRequestBuilder getRequest = get("/games")
-                .header("Authorization", validToken)
+                .header("Authorization", VALID_TOKEN)
                 .contentType(MediaType.APPLICATION_JSON);
 
-        // then
         mockMvc.perform(getRequest)
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(1)))
                 .andExpect(jsonPath("$[0].gameId", is(testGame.getGameId().intValue())))
                 .andExpect(jsonPath("$[0].gamename", is(testGame.getGamename())))
-                .andExpect(jsonPath("$[0].status", is(GameStatus.IN_LOBBY.toString())));
+                .andExpect(jsonPath("$[0].status", is(testGame.getStatus().toString())))
+                .andExpect(jsonPath("$[0].players", hasSize(1)));
     }
 
     @Test
-    public void getAllGames_invalidToken_throwsUnauthorized() throws Exception {
+    public void givenInvalidToken_whenGetGames_thenReturn401() throws Exception {
         // given
-        String invalidToken = "invalid-token";
-        given(userService.authenticateUser(invalidToken))
-                .willThrow(new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authorization failed"));
+        given(userService.authenticateUser(INVALID_TOKEN))
+                .willThrow(new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid token"));
 
-        // when
-        MockHttpServletRequestBuilder getRequest = get("/games")
-                .header("Authorization", invalidToken)
-                .contentType(MediaType.APPLICATION_JSON);
-
-        // then
-        mockMvc.perform(getRequest)
+        // when/then
+        mockMvc.perform(get("/games")
+                        .header("Authorization", INVALID_TOKEN)
+                        .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isUnauthorized());
     }
 
+    // POST /games - Create a new game
     @Test
-    public void updateGame_joinGame_success() throws Exception {
+    public void createGame_validInput_success() throws Exception {
         // given
-        GamePutDTO gamePutDTO = new GamePutDTO();
-        gamePutDTO.setLocationLat(47.1);
-        gamePutDTO.setLocationLong(8.1);
-        gamePutDTO.setStartGame(false);
+        given(userService.authenticateUser(VALID_TOKEN)).willReturn(testUser);
+        given(gameService.createGame(any(GamePostDTO.class), eq(testUser))).willReturn(testGame);
 
-        long gameId = testGame.getGameId();
-        User joiningUser = new User();
-        joiningUser.setUserId(2L);
-        joiningUser.setUsername("joiner");
-        joiningUser.setToken("joiner-token");
-
-        given(userService.authenticateUser("joiner-token")).willReturn(joiningUser);
-        given(gameService.updateGame(eq(gameId), eq(joiningUser), any(GamePutDTO.class)))
-                .willReturn(testGame); // Assume service handles adding player
-
-        // when
-        MockHttpServletRequestBuilder putRequest = put("/games/{gameId}", gameId)
-                .header("Authorization", "joiner-token")
+        // when/then
+        MockHttpServletRequestBuilder postRequest = post("/games")
+                .header("Authorization", VALID_TOKEN)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(asJsonString(gamePutDTO));
+                .content(asJsonString(testGamePostDTO));
 
-        // then
-        mockMvc.perform(putRequest)
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.gameId", is(testGame.getGameId().intValue())));
+        mockMvc.perform(postRequest)
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.gameId", is(testGame.getGameId().intValue())))
+                .andExpect(jsonPath("$.gamename", is(testGame.getGamename())))
+                .andExpect(jsonPath("$.status", is(testGame.getStatus().toString())));
     }
 
-
     @Test
-    public void updateGame_startGameByCreator_success() throws Exception {
+    public void createGame_duplicateGamename_throwsConflict() throws Exception {
         // given
-        GamePutDTO gamePutDTO = new GamePutDTO();
-        gamePutDTO.setLocationLat(testPlayer.getLocationLat());
-        gamePutDTO.setLocationLong(testPlayer.getLocationLong());
-        gamePutDTO.setStartGame(true);
+        given(userService.authenticateUser(VALID_TOKEN)).willReturn(testUser);
+        given(gameService.createGame(any(GamePostDTO.class), eq(testUser)))
+                .willThrow(new ResponseStatusException(HttpStatus.CONFLICT, "Gamename already exists"));
 
-        long gameId = testGame.getGameId();
-        testGame.setStatus(GameStatus.IN_LOBBY);
-
-        // Add enough players
-        User user2 = new User(); user2.setUserId(2L); user2.setUsername("player2");
-        Player player2 = new Player(); player2.setPlayerId(11L); player2.setUser(user2);
-        User user3 = new User(); user3.setUserId(3L); user3.setUsername("player3");
-        Player player3 = new Player(); player3.setPlayerId(12L); player3.setUser(user3);
-        testGame.addPlayer(player2);
-        testGame.addPlayer(player3);
-
-        Game startedGame = testGame;
-        startedGame.setStatus(GameStatus.IN_GAME_PREPARATION); // Simulate state change
-
-        given(userService.authenticateUser(validToken)).willReturn(testUser);
-        given(gameService.updateGame(eq(gameId), eq(testUser), any(GamePutDTO.class)))
-                .willReturn(startedGame);
-
-        // when
-        MockHttpServletRequestBuilder putRequest = put("/games/{gameId}", gameId)
-                .header("Authorization", validToken)
+        // when/then
+        MockHttpServletRequestBuilder postRequest = post("/games")
+                .header("Authorization", VALID_TOKEN)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(asJsonString(gamePutDTO));
+                .content(asJsonString(testGamePostDTO));
 
-        // then
-        mockMvc.perform(putRequest)
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.gameId", is(startedGame.getGameId().intValue())))
-                .andExpect(jsonPath("$.status", is(GameStatus.IN_GAME_PREPARATION.toString())));
-    }
-
-    @Test
-    public void updateGame_startGameNotCreator_throwsForbidden() throws Exception {
-        // given
-        GamePutDTO gamePutDTO = new GamePutDTO();
-        gamePutDTO.setLocationLat(47.2);
-        gamePutDTO.setLocationLong(8.2);
-        gamePutDTO.setStartGame(true);
-
-        long gameId = testGame.getGameId();
-        User notCreator = new User();
-        notCreator.setUserId(99L);
-        notCreator.setUsername("notCreator");
-        notCreator.setToken("not-creator-token");
-
-        given(userService.authenticateUser("not-creator-token")).willReturn(notCreator);
-        given(gameService.updateGame(eq(gameId), eq(notCreator), any(GamePutDTO.class)))
-                .willThrow(new ResponseStatusException(HttpStatus.FORBIDDEN, "Only the creator can start the game"));
-
-        // when
-        MockHttpServletRequestBuilder putRequest = put("/games/{gameId}", gameId)
-                .header("Authorization", "not-creator-token")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(asJsonString(gamePutDTO));
-
-        // then
-        mockMvc.perform(putRequest)
-                .andExpect(status().isForbidden());
-    }
-
-    @Test
-    public void updateGame_gameNotFound_throwsNotFound() throws Exception {
-        // given
-        GamePutDTO gamePutDTO = new GamePutDTO();
-        gamePutDTO.setLocationLat(47.0);
-        gamePutDTO.setLocationLong(8.0);
-        gamePutDTO.setStartGame(false);
-        long nonExistentGameId = 999L;
-
-        given(userService.authenticateUser(validToken)).willReturn(testUser);
-        given(gameService.updateGame(eq(nonExistentGameId), eq(testUser), any(GamePutDTO.class)))
-                .willThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found"));
-
-        // when
-        MockHttpServletRequestBuilder putRequest = put("/games/{gameId}", nonExistentGameId)
-                .header("Authorization", validToken)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(asJsonString(gamePutDTO));
-
-        // then
-        mockMvc.perform(putRequest)
-                .andExpect(status().isNotFound());
-    }
-
-
-    @Test
-    public void updatePlayer_admitCaught_success() throws Exception {
-        // given
-        long gameId = testGame.getGameId();
-        long playerId = testPlayer.getPlayerId();
-        testGame.setStatus(GameStatus.IN_GAME);
-        testPlayer.setStatus(PlayerStatus.HIDING);
-
-        Game updatedGame = testGame;
-        updatedGame.getPlayers().get(0).setStatus(PlayerStatus.FOUND); // Simulate update
-
-        given(userService.authenticateUser(validToken)).willReturn(testUser);
-        given(gameService.updatePlayer(eq(gameId), eq(playerId), eq(testUser)))
-                .willReturn(updatedGame);
-
-        // when
-        MockHttpServletRequestBuilder putRequest = put("/games/{gameId}/players/{playerId}", gameId, playerId)
-                .header("Authorization", validToken)
-                .contentType(MediaType.APPLICATION_JSON);
-
-        // then
-        mockMvc.perform(putRequest)
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.gameId", is(updatedGame.getGameId().intValue())))
-                .andExpect(jsonPath("$.players[?(@.playerId == " + playerId + ")].status", contains(PlayerStatus.FOUND.toString())));
-    }
-
-    @Test
-    public void updatePlayer_playerNotFound_throwsNotFound() throws Exception {
-        // given
-        long gameId = testGame.getGameId();
-        long nonExistentPlayerId = 999L;
-
-        given(userService.authenticateUser(validToken)).willReturn(testUser);
-        given(gameService.updatePlayer(eq(gameId), eq(nonExistentPlayerId), eq(testUser)))
-                .willThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "Player not found"));
-
-        // when
-        MockHttpServletRequestBuilder putRequest = put("/games/{gameId}/players/{playerId}", gameId, nonExistentPlayerId)
-                .header("Authorization", validToken)
-                .contentType(MediaType.APPLICATION_JSON);
-
-        // then
-        mockMvc.perform(putRequest)
-                .andExpect(status().isNotFound());
-    }
-
-    @Test
-    public void updatePlayer_forbidden_throwsForbidden() throws Exception {
-        // given
-        long gameId = testGame.getGameId();
-        long playerId = testPlayer.getPlayerId();
-        testGame.setStatus(GameStatus.FINISHED); // Example: Game not IN_GAME
-
-        given(userService.authenticateUser(validToken)).willReturn(testUser);
-        given(gameService.updatePlayer(eq(gameId), eq(playerId), eq(testUser)))
-                .willThrow(new ResponseStatusException(HttpStatus.FORBIDDEN, "Player is not in that game or user is not that player"));
-
-        // when
-        MockHttpServletRequestBuilder putRequest = put("/games/{gameId}/players/{playerId}", gameId, playerId)
-                .header("Authorization", validToken)
-                .contentType(MediaType.APPLICATION_JSON);
-
-        // then
-        mockMvc.perform(putRequest)
-                .andExpect(status().isForbidden());
-    }
-
-
-    @Test
-    public void deletePlayer_leaveLobbyNotCreator_success() throws Exception {
-        // given
-        long gameId = testGame.getGameId();
-        testGame.setStatus(GameStatus.IN_LOBBY);
-
-        User leavingUser = new User(); leavingUser.setUserId(2L); leavingUser.setUsername("leaver"); leavingUser.setToken("leaver-token");
-        Player leavingPlayer = new Player(); leavingPlayer.setPlayerId(11L); leavingPlayer.setUser(leavingUser);
-        testGame.addPlayer(leavingPlayer);
-        long leavingPlayerId = leavingPlayer.getPlayerId();
-
-        given(userService.authenticateUser("leaver-token")).willReturn(leavingUser);
-        doNothing().when(gameService).deletePlayer(eq(gameId), eq(leavingPlayerId), eq(leavingUser));
-
-        // when
-        MockHttpServletRequestBuilder deleteRequest = delete("/games/{gameId}/players/{playerId}", gameId, leavingPlayerId)
-                .header("Authorization", "leaver-token");
-
-        // then
-        mockMvc.perform(deleteRequest)
-                .andExpect(status().isNoContent());
-    }
-
-    @Test
-    public void deletePlayer_leaveLobbyCreator_successDeletesGame() throws Exception {
-        // given
-        long gameId = testGame.getGameId();
-        long creatorPlayerId = testPlayer.getPlayerId();
-        testGame.setStatus(GameStatus.IN_LOBBY);
-
-        given(userService.authenticateUser(validToken)).willReturn(testUser);
-        doNothing().when(gameService).deletePlayer(eq(gameId), eq(creatorPlayerId), eq(testUser));
-
-        // when
-        MockHttpServletRequestBuilder deleteRequest = delete("/games/{gameId}/players/{playerId}", gameId, creatorPlayerId)
-                .header("Authorization", validToken);
-
-        // then
-        mockMvc.perform(deleteRequest)
-                .andExpect(status().isNoContent());
-    }
-
-    @Test
-    public void deletePlayer_gameNotInLobby_throwsConflict() throws Exception {
-        // given
-        long gameId = testGame.getGameId();
-        long playerId = testPlayer.getPlayerId();
-        testGame.setStatus(GameStatus.IN_GAME);
-
-        given(userService.authenticateUser(validToken)).willReturn(testUser);
-        doThrow(new ResponseStatusException(HttpStatus.CONFLICT, "Game has already started, cannot leave game"))
-                .when(gameService).deletePlayer(eq(gameId), eq(playerId), eq(testUser));
-
-        // when
-        MockHttpServletRequestBuilder deleteRequest = delete("/games/{gameId}/players/{playerId}", gameId, playerId)
-                .header("Authorization", validToken);
-
-        // then
-        mockMvc.perform(deleteRequest)
+        mockMvc.perform(postRequest)
                 .andExpect(status().isConflict());
     }
 
     @Test
-    public void deletePlayer_notThePlayer_throwsForbidden() throws Exception {
+    public void createGame_invalidParameters_throwsBadRequest() throws Exception {
         // given
-        long gameId = testGame.getGameId();
-        long playerId = testPlayer.getPlayerId();
-        testGame.setStatus(GameStatus.IN_LOBBY);
+        given(userService.authenticateUser(VALID_TOKEN)).willReturn(testUser);
+        given(gameService.createGame(any(GamePostDTO.class), eq(testUser)))
+                .willThrow(new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid parameters"));
 
-        User maliciousUser = new User(); maliciousUser.setUserId(99L); maliciousUser.setUsername("hacker"); maliciousUser.setToken("hacker-token");
+        // when/then
+        MockHttpServletRequestBuilder postRequest = post("/games")
+                .header("Authorization", VALID_TOKEN)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(asJsonString(testGamePostDTO));
 
-        given(userService.authenticateUser("hacker-token")).willReturn(maliciousUser);
-        doThrow(new ResponseStatusException(HttpStatus.FORBIDDEN, "User is not that player"))
-                .when(gameService).deletePlayer(eq(gameId), eq(playerId), eq(maliciousUser));
+        mockMvc.perform(postRequest)
+                .andExpect(status().isBadRequest());
+    }
 
-        // when
-        MockHttpServletRequestBuilder deleteRequest = delete("/games/{gameId}/players/{playerId}", gameId, playerId)
-                .header("Authorization", "hacker-token");
+    // PUT /games/{gameId} - Update a game (join, update location, start)
+    @Test
+    public void updateGame_joinLobby_success() throws Exception {
+        // given
+        given(userService.authenticateUser(VALID_TOKEN)).willReturn(testUser);
+        given(gameService.updateGame(eq(testGame.getGameId()), eq(testUser), any(GamePutDTO.class)))
+                .willReturn(testGame);
 
-        // then
-        mockMvc.perform(deleteRequest)
+        // when/then
+        MockHttpServletRequestBuilder putRequest = put("/games/" + testGame.getGameId())
+                .header("Authorization", VALID_TOKEN)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(asJsonString(testGamePutDTO));
+
+        mockMvc.perform(putRequest)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.gameId", is(testGame.getGameId().intValue())))
+                .andExpect(jsonPath("$.gamename", is(testGame.getGamename())));
+    }
+
+    @Test
+    public void updateGame_startGame_success() throws Exception {
+        // given
+        testGame.setStatus(GameStatus.IN_GAME_PREPARATION);
+        testGamePutDTO.setStartGame(true);
+        given(userService.authenticateUser(VALID_TOKEN)).willReturn(testUser);
+        given(gameService.updateGame(eq(testGame.getGameId()), eq(testUser), any(GamePutDTO.class)))
+                .willReturn(testGame);
+
+        // when/then
+        MockHttpServletRequestBuilder putRequest = put("/games/" + testGame.getGameId())
+                .header("Authorization", VALID_TOKEN)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(asJsonString(testGamePutDTO));
+
+        mockMvc.perform(putRequest)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status", is(testGame.getStatus().toString())));
+    }
+
+    @Test
+    public void updateGame_gameNotFound_returnsNotFound() throws Exception {
+        // given
+        given(userService.authenticateUser(VALID_TOKEN)).willReturn(testUser);
+        given(gameService.updateGame(eq(999L), eq(testUser), any(GamePutDTO.class)))
+                .willThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found"));
+
+        // when/then
+        MockHttpServletRequestBuilder putRequest = put("/games/999")
+                .header("Authorization", VALID_TOKEN)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(asJsonString(testGamePutDTO));
+
+        mockMvc.perform(putRequest)
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    public void updateGame_gameFull_returnsForbidden() throws Exception {
+        // given
+        given(userService.authenticateUser(VALID_TOKEN)).willReturn(testUser);
+        given(gameService.updateGame(eq(testGame.getGameId()), eq(testUser), any(GamePutDTO.class)))
+                .willThrow(new ResponseStatusException(HttpStatus.FORBIDDEN, "Game is full"));
+
+        // when/then
+        MockHttpServletRequestBuilder putRequest = put("/games/" + testGame.getGameId())
+                .header("Authorization", VALID_TOKEN)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(asJsonString(testGamePutDTO));
+
+        mockMvc.perform(putRequest)
+                .andExpect(status().isForbidden());
+    }
+
+    // PUT /games/{gameId}/players/{playerId} - Update a player (admit caught)
+    @Test
+    public void updatePlayer_admitCaught_success() throws Exception {
+        // given
+        testGame.setStatus(GameStatus.IN_GAME);
+        given(userService.authenticateUser(VALID_TOKEN)).willReturn(testUser);
+        given(gameService.updatePlayer(testGame.getGameId(), testPlayer.getPlayerId(), testUser))
+                .willReturn(testGame);
+
+        // when/then
+        mockMvc.perform(put("/games/" + testGame.getGameId() + "/players/" + testPlayer.getPlayerId())
+                        .header("Authorization", VALID_TOKEN))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.gameId", is(testGame.getGameId().intValue())));
+    }
+
+    @Test
+    public void updatePlayer_notFound_returnsNotFound() throws Exception {
+        // given
+        given(userService.authenticateUser(VALID_TOKEN)).willReturn(testUser);
+        given(gameService.updatePlayer(testGame.getGameId(), 999L, testUser))
+                .willThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "Player not found"));
+
+        // when/then
+        mockMvc.perform(put("/games/" + testGame.getGameId() + "/players/999")
+                        .header("Authorization", VALID_TOKEN))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    public void updatePlayer_notUsersPLayer_returnsForbidden() throws Exception {
+        // given
+        given(userService.authenticateUser(VALID_TOKEN)).willReturn(testUser);
+        given(gameService.updatePlayer(testGame.getGameId(), testPlayer.getPlayerId(), testUser))
+                .willThrow(new ResponseStatusException(HttpStatus.FORBIDDEN, "Not user's player"));
+
+        // when/then
+        mockMvc.perform(put("/games/" + testGame.getGameId() + "/players/" + testPlayer.getPlayerId())
+                        .header("Authorization", VALID_TOKEN))
+                .andExpect(status().isForbidden());
+    }
+
+    // DELETE /games/{gameId}/players/{playerId} - Delete a player (leave game)
+    @Test
+    public void deletePlayer_leaveLobby_success() throws Exception {
+        // given
+        given(userService.authenticateUser(VALID_TOKEN)).willReturn(testUser);
+        doNothing().when(gameService).deletePlayer(testGame.getGameId(), testPlayer.getPlayerId(), testUser);
+
+        // when/then
+        mockMvc.perform(delete("/games/" + testGame.getGameId() + "/players/" + testPlayer.getPlayerId())
+                        .header("Authorization", VALID_TOKEN))
+                .andExpect(status().isNoContent());
+
+        verify(gameService, times(1)).deletePlayer(testGame.getGameId(), testPlayer.getPlayerId(), testUser);
+    }
+
+    @Test
+    public void deletePlayer_gameNotFound_returnsNotFound() throws Exception {
+        // given
+        given(userService.authenticateUser(VALID_TOKEN)).willReturn(testUser);
+        doThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found"))
+                .when(gameService).deletePlayer(999L, testPlayer.getPlayerId(), testUser);
+
+        // when/then
+        mockMvc.perform(delete("/games/999/players/" + testPlayer.getPlayerId())
+                        .header("Authorization", VALID_TOKEN))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    public void deletePlayer_alreadyStarted_returnsConflict() throws Exception {
+        // given
+        given(userService.authenticateUser(VALID_TOKEN)).willReturn(testUser);
+        doThrow(new ResponseStatusException(HttpStatus.CONFLICT, "Game has already started"))
+                .when(gameService).deletePlayer(testGame.getGameId(), testPlayer.getPlayerId(), testUser);
+
+        // when/then
+        mockMvc.perform(delete("/games/" + testGame.getGameId() + "/players/" + testPlayer.getPlayerId())
+                        .header("Authorization", VALID_TOKEN))
+                .andExpect(status().isConflict());
+    }
+
+    // PUT /games/{gameId}/center - Update game center
+    @Test
+    public void updateGameCenter_success() throws Exception {
+        // given
+        testGame.setStatus(GameStatus.IN_GAME);
+        testGame.setCenterLatitude(47.1);
+        testGame.setCenterLongitude(8.1);
+
+        GameCenterDTO centerDTO = new GameCenterDTO();
+        centerDTO.setLatitude(47.1);
+        centerDTO.setLongitude(8.1);
+
+
+        given(userService.authenticateUser(VALID_TOKEN)).willReturn(testUser);
+        given(gameService.updateGameCenter(eq(testGame.getGameId()), any(GameCenterDTO.class), eq(testUser)))
+                .willReturn(testGame);
+
+
+        // when/then
+        MockHttpServletRequestBuilder putRequest = put("/games/" + testGame.getGameId() + "/center")
+                .header("Authorization", VALID_TOKEN)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(asJsonString(centerDTO));
+
+        mockMvc.perform(putRequest)
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath(("$.gameId"), is(testGame.getGameId().intValue())))
+                .andExpect(jsonPath(("$.centerLatitude"), is(testGame.getCenterLatitude())))
+                .andExpect(jsonPath("$.centerLongitude", is(testGame.getCenterLongitude())));
+    }
+
+    @Test
+    public void updateGameCenter_tooFarAway_returnsForbidden() throws Exception {
+        // given
+        GameCenterDTO centerDTO = new GameCenterDTO();
+        centerDTO.setLatitude(48.0);
+        centerDTO.setLongitude(9.0);
+
+        given(userService.authenticateUser(VALID_TOKEN)).willReturn(testUser);
+        given(gameService.updateGameCenter(eq(testGame.getGameId()), any(GameCenterDTO.class), eq(testUser)))
+                .willThrow(new ResponseStatusException(HttpStatus.FORBIDDEN, "New center is out of current game area"));
+
+        // when/then
+        mockMvc.perform(put("/games/" + testGame.getGameId() + "/center")
+                        .header("Authorization", VALID_TOKEN)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(asJsonString(centerDTO)))
                 .andExpect(status().isForbidden());
     }
 
     @Test
-    public void deletePlayer_gameNotFound_throwsNotFound() throws Exception {
+    public void updateGameCenter_notHunter_returnsForbidden() throws Exception {
         // given
-        long nonExistentGameId = 999L;
-        long playerId = testPlayer.getPlayerId();
+        GameCenterDTO centerDTO = new GameCenterDTO();
+        centerDTO.setLatitude(47.1);
+        centerDTO.setLongitude(8.1);
 
-        given(userService.authenticateUser(validToken)).willReturn(testUser);
-        doThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found"))
-                .when(gameService).deletePlayer(eq(nonExistentGameId), eq(playerId), eq(testUser));
+        given(userService.authenticateUser(VALID_TOKEN)).willReturn(testUser);
+        given(gameService.updateGameCenter(eq(testGame.getGameId()), any(GameCenterDTO.class), eq(testUser)))
+                .willThrow(new ResponseStatusException(HttpStatus.FORBIDDEN, "Only the hunter can update the game center"));
 
-        // when
-        MockHttpServletRequestBuilder deleteRequest = delete("/games/{gameId}/players/{playerId}", nonExistentGameId, playerId)
-                .header("Authorization", validToken);
-
-        // then
-        mockMvc.perform(deleteRequest)
-                .andExpect(status().isNotFound());
+        // when/then
+        mockMvc.perform(put("/games/" + testGame.getGameId() + "/center")
+                        .header("Authorization", VALID_TOKEN)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(asJsonString(centerDTO)))
+                .andExpect(status().isForbidden());
     }
 
+    @Test
+    public void updateGameCenter_unauthorized_returns401() throws Exception {
+        // given
+        GameCenterDTO centerDTO = new GameCenterDTO();
+        centerDTO.setLatitude(47.1);
+        centerDTO.setLongitude(8.1);
 
-    /**
-     * Helper Method to convert object into JSON string.
-     * @param object the object to convert
-     * @return JSON string
-     */
-    private String asJsonString(final Object object) {
-        try {
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.findAndRegisterModules(); // Register JavaTimeModule etc.
-            return objectMapper.writeValueAsString(object);
-        } catch (JsonProcessingException e) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    String.format("The request body could not be created.%s", e.toString()));
-        }
+        given(userService.authenticateUser("Bearer invalid-token"))
+                .willThrow(new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid token"));
+
+        // when/then
+        mockMvc.perform(put("/games/100/center")
+                        .header("Authorization", "Bearer invalid-token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(asJsonString(centerDTO)))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    public void updateGameCenter_gameNotFound_returns404() throws Exception {
+        // given
+        GameCenterDTO centerDTO = new GameCenterDTO();
+        centerDTO.setLatitude(47.1);
+        centerDTO.setLongitude(8.1);
+
+        given(userService.authenticateUser(VALID_TOKEN)).willReturn(testUser);
+        given(gameService.updateGameCenter(any(Long.class), any(GameCenterDTO.class), eq(testUser)))
+                .willThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found"));
+
+        // when/then
+        mockMvc.perform(put("/games/999/center")
+                        .header("Authorization", VALID_TOKEN)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(asJsonString(centerDTO)))
+                .andExpect(status().isNotFound());
     }
 }

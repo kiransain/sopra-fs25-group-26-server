@@ -336,8 +336,11 @@ public class GameService {
                 game.setRadius(Math.max(newRadius, 5));
                 game = checkEndCondition(game);
             }
+            else if (player.getRole() == PlayerRole.HUNTER && player.getStatus() == PlayerStatus.HUNTING) {
+                finishGameByHunter(gameId);
+            }
             else {
-                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Player is not a hider or already found");
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Player is already found");
             }
         }
         else {
@@ -482,6 +485,18 @@ public class GameService {
         gameRepository.save(game);
         gameRepository.flush();
 
+    }
+
+    public void finishGameByHunter(long gameId) {
+        Game game = gameRepository.findByGameId(gameId);
+        if (game == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found");
+        }
+        gameTimerService.stopFinishTimer(gameId);
+        game.setStatus(GameStatus.FINISHED);
+        game = computeRankings(game);
+        gameRepository.save(game);
+        gameRepository.flush();
     }
 
     public void deletePlayer(Long gameId, long playerId, User user) {

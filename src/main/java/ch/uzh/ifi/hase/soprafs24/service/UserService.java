@@ -110,7 +110,11 @@ public class UserService {
             userToBeUpdated.setProfilePicture(userPutDTO.getProfilePicture());
         }
         if (userPutDTO.getPassword() != null && !userPutDTO.getPassword().isEmpty()) {
+            if (userToBeUpdated.getPassword().equals(userPutDTO.getPassword())) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "The password provided is the same as the old one. Therefore, the user could not be updated!");
+            }
             userToBeUpdated.setPassword(userPutDTO.getPassword());
+
         }
 
         userRepository.save(userToBeUpdated);
