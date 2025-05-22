@@ -91,6 +91,8 @@ Prerequisites
 
 - Java 17
 - Gradle 7.0+
+  -**Browser Location:** Ensure that your browser has location services enabled otherwise the game functions will not
+  work.
 
 Clone the Repository
 
@@ -112,6 +114,14 @@ Run the Application
 ```bash
 ./gradlew bootRun
 ```
+
+Run Tests
+
+```bash
+./gradlew test
+```
+
+or directly in your IDE by running the test folder.
 
 External Dependencies
 
@@ -136,7 +146,7 @@ Releases
 Future contributors might consider:
 
 1. Customizable role assignment logic (e.g. several hunters, teams).
-2. Add a more persistent Database for production.
+2. Add a persistent Database for production.
 
 ----------
 
